@@ -321,7 +321,7 @@ $("#fab").onclick=()=>openSheet("Yeni iş", form({}), async d=>{
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{tab=t.dataset.tab;render();});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)load();});
 load();
-if("serviceWorker" in navigator){navigator.serviceWorker.register("/pano/sw.js").catch(()=>{});}
+if("serviceWorker" in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});if(window.caches){caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))).catch(()=>{});}}
 let deferredPrompt=null;
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").style.display="";});
 $("#installBtn").onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").style.display="none";};
