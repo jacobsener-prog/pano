@@ -40,6 +40,15 @@ button.stat{font:inherit;text-align:left;cursor:pointer;color:inherit}
 .mic{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .mic button{flex:1;background:#fff;border:1.5px dashed var(--dark);border-radius:11px;padding:12px;font:inherit;font-weight:600;cursor:pointer}
 .mic button.rec{background:#f1d9cc;border-style:solid;border-color:var(--clay);color:#8a4a2b}
+.thumbs{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 4px}
+.thumbs .th{position:relative;width:76px;height:76px;border-radius:10px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.thumbs .th img{width:100%;height:100%;object-fit:cover;display:block}
+.thumbs .th .x{position:absolute;top:2px;right:2px;background:rgba(43,42,38,.8);color:#fff;border:none;border-radius:999px;width:22px;height:22px;font-size:13px;line-height:22px;text-align:center;cursor:pointer;padding:0}
+.thumbs .th.up{display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px}
+.photoBtn{display:flex;gap:8px;margin-bottom:10px}
+.photoBtn label{flex:1;text-align:center;background:#fff;border:1.5px dashed var(--dark);border-radius:11px;padding:12px;font-weight:600;cursor:pointer}
+.photoBtn input{display:none}
+.card .pic{width:52px;height:52px;border-radius:10px;object-fit:cover;flex:none;border:1px solid var(--line)}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .filters select,.chip{appearance:none;background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 14px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer}
 .chip.on{background:var(--dark);color:#fff;border-color:var(--dark)}
@@ -179,7 +188,8 @@ function renderItems(open){
     h += '<div class="group"><h2>'+esc(g)+'</h2><span>'+arr.length+' iş</span></div>';
     arr.forEach(i=>{
       const late = i.hedef && isOpen(i) && daysTo(i.hedef)<0;
-      h += '<div class="card '+(isKritik(i)&&isOpen(i)?"kritik":"")+'" data-id="'+i.id+'"><div class="body"><div class="t">'+esc(i.konu)+'</div><div class="m"><b>'+esc(i.alan)+'</b>·<span>'+esc(i.sorumlu)+'</span>'+(i.kim?'·<span>'+esc(i.kim)+'</span>':'')+(i.aciliyet==="Acil"?'·<span class="late">Acil</span>':'')+(i.hedef?'·<span class="'+(late?"late":"")+'">'+esc(i.hedef)+'</span>':'')+(!isOpen(i)?'·<span>'+esc(i.durum)+'</span>':'')+'</div></div>'+(isOpen(i)?'<button class="btn" data-done="'+i.id+'">✓ Bitti</button>':'')+'</div>';
+      const pics=(i.foto||"").split("\n").filter(Boolean);
+      h += '<div class="card '+(isKritik(i)&&isOpen(i)?"kritik":"")+'" data-id="'+i.id+'">'+(pics.length?'<img class="pic" src="'+esc(pics[0])+'" data-pic="'+esc(pics[0])+'" alt="">':'')+'<div class="body"><div class="t">'+esc(i.konu)+(pics.length>1?' <span class="pill">'+pics.length+' foto</span>':'')+'</div><div class="m"><b>'+esc(i.alan)+'</b>·<span>'+esc(i.sorumlu)+'</span>'+(i.kim?'·<span>'+esc(i.kim)+'</span>':'')+(i.aciliyet==="Acil"?'·<span class="late">Acil</span>':'')+(i.hedef?'·<span class="'+(late?"late":"")+'">'+esc(i.hedef)+'</span>':'')+(!isOpen(i)?'·<span>'+esc(i.durum)+'</span>':'')+'</div></div>'+(isOpen(i)?'<button class="btn" data-done="'+i.id+'">✓ Bitti</button>':'')+'</div>';
     });
   });
   $("#view").innerHTML=h;
@@ -189,6 +199,7 @@ function renderItems(open){
   document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{view=b.dataset.view;if(view!=="all")flt.done=false;render();});
   document.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>doneItem(b.dataset.done));
   document.querySelectorAll(".card .body").forEach(b=>b.onclick=()=>editItem(b.parentElement.dataset.id));
+  document.querySelectorAll(".card .pic").forEach(p=>p.onclick=()=>window.open(p.dataset.pic,"_blank"));
 }
 
 function renderPer(perDue){
@@ -291,14 +302,44 @@ function form(i){
   '<div class="row"><div class="f"><label>Önem</label>'+sel("onem",i.onem||"Orta")+'</div><div class="f"><label>Aciliyet</label>'+sel("aciliyet",i.aciliyet||"Bu Ay")+'</div></div>'+
   '<div class="row"><div class="f"><label>Sorumlu</label>'+sel("sorumlu",i.sorumlu||"Ömer")+'</div><div class="f"><label>Kim / Tedarikçi</label><input name="kim" list="ted" value="'+esc(i.kim||"")+'"><datalist id="ted">'+(lists.tedarikci||[]).map(o=>'<option value="'+esc(o)+'">').join("")+'</datalist></div></div>'+
   '<div class="row"><div class="f"><label>Hedef tarih</label><input type="date" name="hedef" value="'+esc(i.hedef||"")+'"></div><div class="f"><label>Maliyet (TL)</label><input type="number" name="maliyet" value="'+(i.maliyet||0)+'"></div></div>'+
-  '<div class="row"><div class="f"><label>Durum</label>'+sel("durum",i.durum||"Açık")+'</div><div class="f"><label>Not</label><input name="not" value="'+esc(i.not||"")+'"></div></div>';
+  '<div class="row"><div class="f"><label>Durum</label>'+sel("durum",i.durum||"Açık")+'</div><div class="f"><label>Not</label><input name="not" value="'+esc(i.not||"")+'"></div></div>'+
+  '<div class="f"><label>Fotoğraf</label><div class="thumbs" id="thumbs"></div><div class="photoBtn"><label>📷 Fotoğraf çek<input type="file" accept="image/*" capture="environment" id="camIn"></label><label>🖼 Galeriden seç<input type="file" accept="image/*" multiple id="galIn"></label></div><input type="hidden" name="foto" value="'+esc(i.foto||"")+'"></div>';
+}
+function compressImage(file, max=1280, q=0.8){
+  return new Promise((res,rej)=>{
+    const img=new Image(); const url=URL.createObjectURL(file);
+    img.onload=()=>{ const r=Math.min(1,max/Math.max(img.width,img.height)); const c=document.createElement("canvas"); c.width=Math.round(img.width*r); c.height=Math.round(img.height*r); c.getContext("2d").drawImage(img,0,0,c.width,c.height); URL.revokeObjectURL(url); c.toBlob(b=>b?res(b):rej(new Error("blob")),"image/jpeg",q); };
+    img.onerror=()=>rej(new Error("img")); img.src=url;
+  });
+}
+function attachPhotos(formEl){
+  const th=formEl.querySelector("#thumbs"), hid=formEl.foto; if(!th) return;
+  const list=()=> (hid.value||"").split("\n").filter(Boolean);
+  const draw=()=>{ th.innerHTML=list().map((u,k)=>'<div class="th"><img src="'+esc(u)+'"><button type="button" class="x" data-k="'+k+'">×</button></div>').join(""); th.querySelectorAll(".x").forEach(b=>b.onclick=()=>{const l=list(); l.splice(+b.dataset.k,1); hid.value=l.join("\n"); draw();}); };
+  draw();
+  const handle=async e=>{
+    const files=[...e.target.files]; e.target.value="";
+    for(const f of files){
+      const ph=document.createElement("div"); ph.className="th up"; ph.textContent="yükleniyor"; th.appendChild(ph);
+      try{
+        const blob=await compressImage(f);
+        const path=todayStr()+"/"+Date.now()+"-"+Math.random().toString(36).slice(2,6)+".jpg";
+        const {error}=await sb.storage.from("pano").upload(path, blob, {contentType:"image/jpeg"});
+        if(error) throw error;
+        const {data}=sb.storage.from("pano").getPublicUrl(path);
+        hid.value=[...list(), data.publicUrl].join("\n");
+      }catch(err){ toast("Fotoğraf yüklenemedi: "+(err.message||err)); }
+      draw();
+    }
+  };
+  formEl.querySelector("#camIn").onchange=handle; formEl.querySelector("#galIn").onchange=handle;
 }
 function openSheet(title, inner, onSave){
   const o=document.createElement("div"); o.className="overlay";
   o.innerHTML='<form class="sheet"><h3>'+esc(title)+'</h3>'+inner+'<div class="actions"><button type="button" class="btn ghost">Vazgeç</button><button type="submit" class="btn primary">Kaydet</button></div></form>';
   document.body.appendChild(o);
   o.querySelector(".ghost").onclick=()=>o.remove();
-  attachMic(o.querySelector("form"));
+  attachMic(o.querySelector("form")); attachPhotos(o.querySelector("form"));
   o.onclick=e=>{if(e.target===o)o.remove();};
   o.querySelector("form").onsubmit=async e=>{e.preventDefault();const d={};new FormData(e.target).forEach((v,k)=>d[k]=v);d.maliyet=Number(d.maliyet||0);if(!d.hedef)d.hedef=null;await onSave(d);o.remove();};
 }
