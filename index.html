@@ -34,6 +34,12 @@ h1{font-size:24px;font-weight:700;margin:6px 0 14px;letter-spacing:-.2px}
 .stat.k .v{color:var(--clay)}
 .stat.d{background:var(--dark);color:#fff;border-color:var(--dark)}
 .stat.d .l{color:#c9c4b8}
+button.stat{font:inherit;text-align:left;cursor:pointer;color:inherit}
+.stat.sel{box-shadow:0 0 0 2px var(--dark)}
+.stat.d.sel{box-shadow:0 0 0 2px var(--clay)}
+.mic{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.mic button{flex:1;background:#fff;border:1.5px dashed var(--dark);border-radius:11px;padding:12px;font:inherit;font-weight:600;cursor:pointer}
+.mic button.rec{background:#f1d9cc;border-style:solid;border-color:var(--clay);color:#8a4a2b}
 .filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
 .filters select,.chip{appearance:none;background:#fff;border:1px solid var(--line);border-radius:999px;padding:9px 14px;font:inherit;font-size:14px;color:var(--ink);cursor:pointer}
 .chip.on{background:var(--dark);color:#fff;border-color:var(--dark)}
@@ -86,6 +92,7 @@ h1{font-size:24px;font-weight:700;margin:6px 0 14px;letter-spacing:-.2px}
   <div class="hint" id="hint"></div>
 </div>
 <button class="fab" id="fab">+ Yeni iş</button>
+<button class="btn" id="installBtn" style="display:none;position:fixed;left:18px;bottom:calc(18px + env(safe-area-inset-bottom));background:#fff;z-index:30">⬇ Uygulama olarak yükle</button>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
@@ -94,7 +101,7 @@ const SUPABASE_ANON = "sb_publishable_5wRvqbONlp_n25Y6nndR5Q_Tyfyfu8_";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const AY = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
-let items=[], periodic=[], lists={}, tab="items", flt={meslek:"",alan:"",sorumlu:"",done:false};
+let items=[], periodic=[], lists={}, tab="items", view="all", flt={meslek:"",alan:"",sorumlu:"",done:false};
 const todayStr = ()=> new Date().toISOString().slice(0,10);
 const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const $ = s => document.querySelector(s);
@@ -154,6 +161,8 @@ function renderItems(open){
   const kritik = open.filter(isKritik).length, week = open.filter(isWeek).length;
   const opt=(k,label)=>'<select data-f="'+k+'"><option value="">'+label+'</option>'+(lists[k]||[]).map(v=>'<option '+(flt[k]===v?"selected":"")+'>'+esc(v)+'</option>').join("")+'</select>';
   let list = flt.done ? items.filter(i=>!isOpen(i)) : open;
+  if(view==="kritik") list=list.filter(isKritik);
+  if(view==="week") list=list.filter(isWeek);
   if(flt.meslek) list=list.filter(i=>i.meslek===flt.meslek);
   if(flt.alan) list=list.filter(i=>i.alan===flt.alan);
   if(flt.sorumlu) list=list.filter(i=>i.sorumlu===flt.sorumlu);
@@ -162,9 +171,9 @@ function renderItems(open){
     const ka=groups[a].some(isKritik), kb=groups[b].some(isKritik);
     if(ka!==kb) return ka?-1:1; return a.localeCompare(b,"tr");
   });
-  let h = '<div class="stats"><div class="stat k"><div class="l">Kritik</div><div class="v">'+kritik+'</div></div><div class="stat"><div class="l">Bu hafta</div><div class="v">'+week+'</div></div><div class="stat d"><div class="l">Tüm açık</div><div class="v">'+open.length+'</div></div></div>';
-  h += '<div class="filters">'+opt("meslek","Tüm meslekler")+opt("alan","Tüm alanlar")+opt("sorumlu","Herkes")+'<span class="chip '+(flt.done?"on":"")+'" id="doneChip">Bitenler</span></div>';
-  if(!order.length) h+='<div class="empty">'+(flt.done?"Biten iş yok.":"Açık iş yok. Rahat.")+'</div>';
+  let h = '<div class="stats"><button class="stat k '+(view==="kritik"?"sel":"")+'" data-view="kritik"><div class="l">Kritik</div><div class="v">'+kritik+'</div></button><button class="stat '+(view==="week"?"sel":"")+'" data-view="week"><div class="l">Bu hafta</div><div class="v">'+week+'</div></button><button class="stat d '+(view==="all"?"sel":"")+'" data-view="all"><div class="l">Tüm açık</div><div class="v">'+open.length+'</div></button></div>';
+  if(view==="all") h += '<div class="filters">'+opt("meslek","Tüm meslekler")+opt("alan","Tüm alanlar")+opt("sorumlu","Herkes")+'<span class="chip '+(flt.done?"on":"")+'" id="doneChip">Bitenler</span></div>';
+  if(!order.length) h+='<div class="empty">'+(flt.done?"Biten iş yok.":view==="kritik"?"Kritik iş yok.":view==="week"?"Bu hafta iş yok.":"Açık iş yok. Rahat.")+'</div>';
   order.forEach(g=>{
     const arr = groups[g].sort((a,b)=>(isKritik(b)-isKritik(a))||(a.hedef||"9").localeCompare(b.hedef||"9"));
     h += '<div class="group"><h2>'+esc(g)+'</h2><span>'+arr.length+' iş</span></div>';
@@ -174,9 +183,10 @@ function renderItems(open){
     });
   });
   $("#view").innerHTML=h;
-  $("#hint").textContent="Karta dokun: detay. ✓ Bitti: listeden kalkar (5 sn geri alınabilir).";
+  $("#hint").textContent="Üstteki kutulara dokun: filtre. Karta dokun: detay. ✓ Bitti: 5 sn geri alınabilir.";
   document.querySelectorAll("[data-f]").forEach(s=>s.onchange=e=>{flt[e.target.dataset.f]=e.target.value;render();});
-  $("#doneChip").onclick=()=>{flt.done=!flt.done;render();};
+  const dc=$("#doneChip"); if(dc) dc.onclick=()=>{flt.done=!flt.done;render();};
+  document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{view=b.dataset.view;if(view!=="all")flt.done=false;render();});
   document.querySelectorAll("[data-done]").forEach(b=>b.onclick=()=>doneItem(b.dataset.done));
   document.querySelectorAll(".card .body").forEach(b=>b.onclick=()=>editItem(b.parentElement.dataset.id));
 }
@@ -227,8 +237,55 @@ async function donePer(id){
 }
 
 function sel(k,v){ return '<select name="'+k+'">'+(lists[k]||[]).map(o=>'<option '+(o===v?"selected":"")+'>'+esc(o)+'</option>').join("")+'</select>'; }
+function guess(t){
+  const s=t.toLowerCase(), g={};
+  if(/acil|tehlike|misafir geliyor/.test(s)){g.aciliyet="Acil";g.onem="Yüksek";}
+  if(/bu hafta/.test(s)) g.aciliyet="Bu Hafta";
+  if(/konteyner|container/.test(s)) g.alan="Konteyner";
+  else if(/havuz evi/.test(s)) g.alan="Havuz Evi";
+  else if(/havuz/.test(s)){g.alan="Havuz";g.meslek="Havuzcu";}
+  else if(/bahçe|bahce|ağaç|çim|sulama/.test(s)){g.alan="Bahçe";g.meslek="Bahçıvan";}
+  else if(/giriş|yol|kapı/.test(s)) g.alan="Giriş / Yollar";
+  else if(/ana ev/.test(s)) g.alan="Ana Ev";
+  if(/elektrik|ışık|isik|lamba|priz|sigorta|jeneratör/.test(s)) g.meslek="Elektrikçi";
+  else if(/klima/.test(s)) g.meslek="Klimacı";
+  else if(/su |musluk|tesisat|sızıntı|sizinti|tıkan|lavabo|tuvalet|boru/.test(s)) g.meslek="Tesisatçı";
+  else if(/boya|alçı|alci/.test(s)) g.meslek="Boyacı / Alçıcı";
+  else if(/ahşap|ahsap|dolap|raf|marangoz/.test(s)) g.meslek="Marangoz";
+  else if(/demir|çelik|pergola|korkuluk/.test(s)) g.meslek="Demirci";
+  else if(/pencere|doğrama|dograma|cam /.test(s)) g.meslek="Doğramacı";
+  else if(/temizlik|sineklik|çamaşır/.test(s)) g.meslek="Temizlik";
+  else if(/satın al|sipariş|siparis|alınacak|alinacak/.test(s)) g.meslek="Satın Alma";
+  if(/mete/.test(s)) g.sorumlu="Mete"; else if(/ayşe|ayse/.test(s)) g.sorumlu="Ayşe";
+  return g;
+}
+function attachMic(formEl){
+  const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+  const btn=formEl.querySelector("#micBtn"); if(!btn) return;
+  if(!SR){btn.textContent="🎤 Bu tarayıcıda ses desteği yok";btn.disabled=true;return;}
+  let rec=null;
+  btn.onclick=()=>{
+    if(rec){rec.stop();return;}
+    rec=new SR(); rec.lang="tr-TR"; rec.interimResults=true; rec.continuous=false;
+    btn.classList.add("rec"); btn.textContent="● Dinliyorum... (bitirmek için dokun)";
+    let finalText="";
+    rec.onresult=e=>{let t="";for(const r of e.results){t+=r[0].transcript;if(r.isFinal)finalText=t;}
+      formEl.konu.value=t.trim();};
+    rec.onerror=()=>{btn.classList.remove("rec");btn.textContent="🎤 Konuşarak ekle";rec=null;};
+    rec.onend=()=>{
+      btn.classList.remove("rec"); btn.textContent="🎤 Konuşarak ekle"; rec=null;
+      const t=(finalText||formEl.konu.value).trim(); if(!t) return;
+      const parts=t.split(/[.!?]\s+|,\s+(?=[a-zçğıöşü])/i);
+      let konu=parts[0].trim(); if(konu.length>70){konu=konu.slice(0,70).replace(/\s\S*$/,"");}
+      konu=konu.charAt(0).toUpperCase()+konu.slice(1);
+      formEl.konu.value=konu; if(t.length>konu.length+3) formEl.aciklama.value=t;
+      const g=guess(t); for(const k in g){ if(formEl[k]) formEl[k].value=g[k]; }
+    };
+    rec.start();
+  };
+}
 function form(i){
-  return '<div class="f"><label>Konu</label><input name="konu" value="'+esc(i.konu||"")+'" required></div>'+
+  return (i.id?'':'<div class="mic"><button type="button" id="micBtn">🎤 Konuşarak ekle</button></div>')+'<div class="f"><label>Konu</label><input name="konu" value="'+esc(i.konu||"")+'" required></div>'+
   '<div class="f"><label>Açıklama</label><textarea name="aciklama">'+esc(i.aciklama||"")+'</textarea></div>'+
   '<div class="row"><div class="f"><label>Alan</label>'+sel("alan",i.alan||"Genel")+'</div><div class="f"><label>Meslek</label>'+sel("meslek",i.meslek||"Kendi Ekibimiz")+'</div></div>'+
   '<div class="row"><div class="f"><label>Önem</label>'+sel("onem",i.onem||"Orta")+'</div><div class="f"><label>Aciliyet</label>'+sel("aciliyet",i.aciliyet||"Bu Ay")+'</div></div>'+
@@ -241,6 +298,7 @@ function openSheet(title, inner, onSave){
   o.innerHTML='<form class="sheet"><h3>'+esc(title)+'</h3>'+inner+'<div class="actions"><button type="button" class="btn ghost">Vazgeç</button><button type="submit" class="btn primary">Kaydet</button></div></form>';
   document.body.appendChild(o);
   o.querySelector(".ghost").onclick=()=>o.remove();
+  attachMic(o.querySelector("form"));
   o.onclick=e=>{if(e.target===o)o.remove();};
   o.querySelector("form").onsubmit=async e=>{e.preventDefault();const d={};new FormData(e.target).forEach((v,k)=>d[k]=v);d.maliyet=Number(d.maliyet||0);if(!d.hedef)d.hedef=null;await onSave(d);o.remove();};
 }
@@ -263,6 +321,11 @@ $("#fab").onclick=()=>openSheet("Yeni iş", form({}), async d=>{
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{tab=t.dataset.tab;render();});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden)load();});
 load();
+if("serviceWorker" in navigator){navigator.serviceWorker.register("/pano/sw.js").catch(()=>{});}
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();deferredPrompt=e;$("#installBtn").style.display="";});
+$("#installBtn").onclick=async()=>{if(!deferredPrompt)return;deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;$("#installBtn").style.display="none";};
+window.addEventListener("appinstalled",()=>{$("#installBtn").style.display="none";});
 </script>
 </body>
 </html>
