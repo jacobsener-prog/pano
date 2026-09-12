@@ -271,8 +271,12 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
 // ============================================================
 // Supabase connection
 // ============================================================
-const SB_URL = "https://vmkhwvaeslrckmlijmna.supabase.co";
-const SB_KEY = "sb_publishable_Im4k6HqOdRDc_nM3arDwGA_2sYp0rsV";
+// One Supabase project for everything, so the org is not billed for a second
+// one. The board lives in the pano_* tables; the bucket is pano-fotograflar.
+const SB_URL = "https://jkeekuxpmbasgrsdrymy.supabase.co";
+const SB_KEY = "sb_publishable_5wRvqbONlp_n25Y6nndR5Q_Tyfyfu8_";
+const T = { items:"pano_items", periodic:"pano_periodic", log:"pano_periodic_log", presence:"pano_presence", config:"pano_config" };
+const BUCKET = "pano-fotograflar";
 const REST = SB_URL + "/rest/v1";
 const H = () => ({ apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" });
 
@@ -300,16 +304,16 @@ async function sbDelete(table, id){
 async function sbUpload(file){
   const safe = (file.name||"dosya").replace(/[^\w.\-]+/g,"_");
   const path = Date.now().toString(36) + "-" + Math.random().toString(36).slice(2,7) + "-" + safe;
-  const r = await fetch(SB_URL + "/storage/v1/object/photos/" + encodeURIComponent(path), {
+  const r = await fetch(SB_URL + "/storage/v1/object/"+BUCKET+"/" + encodeURIComponent(path), {
     method:"POST",
     headers:{ apikey:SB_KEY, Authorization:"Bearer "+SB_KEY, "x-upsert":"true", "Content-Type": file.type || "application/octet-stream" },
     body: file
   });
   if(!r.ok){ const t = await r.text(); const e = new Error(t); e.status = r.status; throw e; }
-  return { path, url: SB_URL + "/storage/v1/object/public/photos/" + encodeURIComponent(path), ct: file.type || "" };
+  return { path, url: SB_URL + "/storage/v1/object/public/"+BUCKET+"/" + encodeURIComponent(path), ct: file.type || "" };
 }
 async function sbRemoveFile(path){
-  await fetch(SB_URL + "/storage/v1/object/photos/" + encodeURIComponent(path), {
+  await fetch(SB_URL + "/storage/v1/object/"+BUCKET+"/" + encodeURIComponent(path), {
     method:"DELETE", headers:{ apikey:SB_KEY, Authorization:"Bearer "+SB_KEY }
   }).catch(()=>{});
 }
@@ -594,7 +598,7 @@ $("#pfKategori").onchange=e=>{ pKategori=e.target.value; renderPeriodic(); };
 async function setDone(id,done){ const it=items.find(i=>i.id===id); if(!it) return;
   const before={durum:it.durum,tamamlandi:it.tamamlandi};
   it.durum = done?"Tamamlandı":"Açık"; it.tamamlandi = done?today():null; renderAll();
-  try{ await sbUpdate("items",id,{durum:it.durum,tamamlandi:it.tamamlandi,updated:new Date().toISOString()});
+  try{ await sbUpdate(T.items,id,{durum:it.durum,tamamlandi:it.tamamlandi,updated:new Date().toISOString()});
     if(done){ lastUndo=()=>setDone(id,false); toast("Bitti: "+it.konu,true); } else toast("Geri açıldı"); }
   catch(err){ Object.assign(it,before); renderAll(); toast("Kaydedilemedi"); } }
 $("#list").addEventListener("click",e=>{ const d=e.target.closest("[data-done]"); if(d) return setDone(d.dataset.done,true);
@@ -603,7 +607,7 @@ $("#list").addEventListener("click",e=>{ const d=e.target.closest("[data-done]")
 
 async function undoDoneP(id){ const docId=id+"_"+pYear+"_"+(pMonth+1); const keep=perLog[docId];
   delete perLog[docId]; renderAll();
-  try{ await sbDelete("periodic_log",docId); toast("Geri alındı"); }
+  try{ await sbDelete(T.log,docId); toast("Geri alındı"); }
   catch(err){ if(keep) perLog[docId]=keep; renderAll(); toast("Kaydedilemedi"); } }
 $("#plist").addEventListener("click",e=>{ const u=e.target.closest("[data-pundo]"); if(u) return undoDoneP(u.dataset.pundo);
   const o=e.target.closest("[data-popen]"); if(o) openP(per.find(x=>x.id===o.dataset.popen)); });
@@ -642,13 +646,13 @@ form.onsubmit=async e=>{ e.preventDefault();
     if(editing){
       d.durum=editing.durum||"Açık";
       if(d.durum==="Tamamlandı") d.tamamlandi=editing.tamamlandi||today(); else d.tamamlandi=null;
-      await sbUpdate("items",editing.id,d);
+      await sbUpdate(T.items,editing.id,d);
       Object.assign(editing,d);
       toast("Kaydedildi");
     } else {
       const id="i"+Date.now().toString(36);
       d.id=id; d.durum="Açık"; d.tamamlandi=null; d.tarih=today(); d.created=d.updated; d.kaynak="pano";
-      await sbInsert("items",d);
+      await sbInsert(T.items,d);
       items.push(Object.assign({},d));
       toast("Eklendi");
     }
@@ -657,7 +661,7 @@ form.onsubmit=async e=>{ e.preventDefault();
   catch(err){ toast("Kaydedilemedi: "+(err&&err.message?String(err.message).slice(0,120):"hata"),false,7000); } };
 
 $("#btnDelete").onclick=async()=>{ if(!editing) return; if(!confirm("Silinsin mi? Genelde ✓ Bitti veya İptal daha iyidir.")) return;
-  try{ await sbDelete("items",editing.id); items=items.filter(x=>x.id!==editing.id); renderAll(); dlg.close(); toast("Silindi"); }
+  try{ await sbDelete(T.items,editing.id); items=items.filter(x=>x.id!==editing.id); renderAll(); dlg.close(); toast("Silindi"); }
   catch(err){ toast("Silinemedi"); } };
 
 const lightbox=$("#lightbox");
@@ -677,10 +681,10 @@ $("#pCancel").onclick=()=>pdlg.close();
 $("#pform").onsubmit=async e=>{ e.preventDefault(); if(!pEditing) return; if(!$("#pLast").value) return toast("Tarih girin");
   const docId=pEditing.id+"_"+pYear+"_"+(pMonth+1);
   const row={id:docId,taskId:pEditing.id,gorev:pEditing.gorev,kategori:pEditing.kategori||"",yil:pYear,ay:pMonth+1,tarih:$("#pLast").value,sorumlu:$("#pSorumlu").value,not:$("#pNot").value.trim(),updated:new Date().toISOString()};
-  try{ await sbInsert("periodic_log",row,true); perLog[docId]=row; renderAll(); pdlg.close(); toast("Kaydedildi"); }
+  try{ await sbInsert(T.log,row,true); perLog[docId]=row; renderAll(); pdlg.close(); toast("Kaydedildi"); }
   catch(err){ toast("Kaydedilemedi"); } };
 $("#pDeleteLog").onclick=async()=>{ if(!pEditing) return; const docId=pEditing.id+"_"+pYear+"_"+(pMonth+1);
-  try{ await sbDelete("periodic_log",docId); delete perLog[docId]; renderAll(); pdlg.close(); toast("İşareti kaldırıldı"); }
+  try{ await sbDelete(T.log,docId); delete perLog[docId]; renderAll(); pdlg.close(); toast("İşareti kaldırıldı"); }
   catch(err){ toast("Silinemedi"); } };
 
 let tt; function toast(m,undo,ms){ const t=$("#toast"); $("#toastMsg").textContent=m; $("#undo").hidden=!undo; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>{t.classList.remove("show");lastUndo=null;},ms||(undo?5000:2000)); }
@@ -695,7 +699,7 @@ async function touchPresence(){
   if(Date.now()-lastTouch < 180000) return;
   lastTouch=Date.now();
   const prev=presence[ME];
-  try{ await sbInsert("presence",{id:ME,last_seen:new Date().toISOString(),opens:((prev&&prev.opens)||0)+1},true); }
+  try{ await sbInsert(T.presence,{id:ME,last_seen:new Date().toISOString(),opens:((prev&&prev.opens)||0)+1},true); }
   catch(e){ lastTouch=0; }
 }
 
@@ -704,13 +708,14 @@ let refreshing=false;
 async function refresh(){
   if(refreshing) return; refreshing=true;
   try{
-    const [it,pe,pl,cf,pr] = await Promise.all([ sbGet("items"), sbGet("periodic"), sbGet("periodic_log"), sbGet("config_lists"), sbGet("presence").catch(()=>[]) ]);
+    const [it,pe,pl,cf,pr] = await Promise.all([ sbGet(T.items), sbGet(T.periodic), sbGet(T.log), sbGet(T.config), sbGet(T.presence).catch(()=>[]) ]);
     items = it.filter(x=>x.konu);
     per = pe.filter(x=>x.gorev);
     perLog = {}; pl.forEach(x=>{ perLog[x.id]=x; });
     presence = {}; (pr||[]).forEach(x=>{ presence[x.id]=x; });
     touchPresence();
-    if(cf && cf[0] && cf[0].alan){ const c=cf[0]; const nl={}; for(const k of ["alan","meslek","onem","aciliyet","sorumlu","durum","tedarikci"]) if(Array.isArray(c[k])) nl[k]=c[k];
+    const cfg = cf && cf[0] ? (cf[0].data || cf[0]) : null;
+    if(cfg && cfg.alan){ const c=cfg; const nl={}; for(const k of ["alan","meslek","onem","aciliyet","sorumlu","durum","tedarikci"]) if(Array.isArray(c[k])) nl[k]=c[k];
       LISTS=Object.assign({},LISTS,nl); applyLists(); }
     ready=true;
     if(dlg.open || pdlg.open){ /* skip repaint while a dialog is open */ } else renderAll();
