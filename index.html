@@ -419,15 +419,15 @@ function renderAll(){ paintWho(); applyScope(); renderTodo(); renderPeriodic();
 
 function renderTodo(){
   const admin=IS_ADMIN(), base=scopedItems(), open=base.filter(isOpen);
-  const isLate=i=>i.hedef&&i.hedef<today();
+  const isHafta=i=>i.aciliyet==="Bu Hafta";
   let tiles;
   if(admin){
     tiles=[["crit","Kritik",open.filter(i=>prio(i).n===1).length,"crit"]]
       .concat(sorumluList().filter(n=>n!=="Mete").map(n=>["kisi:"+n,n,open.filter(i=>i.sorumlu===n).length,""]));
   } else {
     tiles=[["crit","Kritik",open.filter(i=>prio(i).n===1).length,"crit"],
-           ["open","Açık",open.length,""],
-           ["late","Gecikmiş",open.filter(isLate).length,"crit"]];
+           ["hafta","Bu Hafta",open.filter(isHafta).length,""],
+           ["open","Tüm işler",open.length,""]];
   }
   if(kpiFilter!=="open" && !tiles.some(t=>t[0]===kpiFilter)) kpiFilter="open";
   $("#kpis").innerHTML=tiles
@@ -435,7 +435,7 @@ function renderTodo(){
   let list;
   if(showDone) list=base.filter(i=>!isOpen(i));
   else if(kpiFilter==="crit") list=open.filter(i=>prio(i).n===1);
-  else if(kpiFilter==="late") list=open.filter(isLate);
+  else if(kpiFilter==="hafta") list=open.filter(isHafta);
   else if(kpiFilter.indexOf("kisi:")===0){ const who=kpiFilter.slice(5); list=open.filter(i=>i.sorumlu===who); }
   else list=open;
   if(fAlan) list=list.filter(i=>i.alan===fAlan); if(fMeslek) list=list.filter(i=>i.meslek===fMeslek); if(fSorumlu) list=list.filter(i=>i.sorumlu===fSorumlu);
