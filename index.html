@@ -53,6 +53,11 @@ nav.tabs button[aria-selected="true"] .n{background:var(--bg);color:var(--ink)} 
 .kpi.crit .v{color:var(--crit)}
 .kpi[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)} .kpi[aria-pressed="true"] .l,.kpi[aria-pressed="true"] .v{color:var(--bg)}
 .kpi[aria-pressed="true"] .s,.kpi[aria-pressed="true"] .s.cold{color:var(--bg);opacity:.7}
+.viewbar{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.viewbar .viewwho{font-weight:700;font-size:16px}
+.viewbar .viewwho small{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+#team{margin-bottom:12px}
+#team .thead{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--olive);padding:0 4px 6px}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:500;cursor:pointer;color:var(--ink2)}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -181,7 +186,9 @@ details.more{border-top:1px solid var(--line);padding-top:8px} details.more summ
   </nav>
 
   <div id="tab-todo">
+    <div class="viewbar" id="viewbar" hidden></div>
     <div class="kpis" id="kpis"></div>
+    <div id="team" hidden></div>
     <div class="chips" id="chips">
       <select class="chip" id="fMeslek"><option value="">Tüm meslekler</option></select>
       <select class="chip" id="fAlan"><option value="">Tüm alanlar</option></select>
@@ -355,7 +362,7 @@ document.getElementById("gcNo").onclick = ()=>{
 };
 document.getElementById("gcYes").addEventListener("click", ()=>{
   if(!gatePending) return;
-  ME = gatePending; gatePending = null; LOCKED = true;
+  ME = gatePending; gatePending = null; LOCKED = true; VIEW = ME;
   if(ME === "Mete") ADMIN_DEV = true;
   try{ localStorage.setItem("pano_kisi", ME); localStorage.setItem("pano_kilit","1");
        if(ADMIN_DEV) localStorage.setItem("pano_admin","1"); }catch(err){}
@@ -369,9 +376,14 @@ document.getElementById("gcYes").addEventListener("click", ()=>{
 // Mete hands out the work, so he sees the whole board. Everyone else sees only
 // what is assigned to them.
 const IS_ADMIN = () => ME === "Mete";
+// ME is who this device is. VIEW is whose board is on screen. They differ only
+// when Mete steps into someone else's list, and presence is stamped for ME
+// alone, so looking at Ömer's board never counts as Ömer having opened it.
+let VIEW = ME;
+const viewingOther = () => IS_ADMIN() && VIEW !== ME;
 // Only the todo list is scoped. Periyodik Bakım stays shared: everyone sees all
 // of it, as before.
-const scopedItems = () => IS_ADMIN() ? items : items.filter(i=>i.sorumlu===ME);
+const scopedItems = () => IS_ADMIN() ? items.filter(i=>i.sorumlu===VIEW) : items.filter(i=>i.sorumlu===ME);
 document.getElementById("whoBtn").onclick = showGate;
 
 // ============================================================
@@ -462,9 +474,8 @@ const SHOW_PERIODIC = false;
 
 // Show or hide the pieces of the UI that only make sense for the whole board.
 function applyScope(){
-  const admin=IS_ADMIN();
-  $("#fSorumlu").hidden=!admin;
-  if(!admin) fSorumlu="";
+  // the sorumlu filter is redundant now that the board is always one person's
+  $("#fSorumlu").hidden=true; fSorumlu="";
   if(!SHOW_PERIODIC) tab="todo";
   $("nav.tabs").hidden=!SHOW_PERIODIC;
   $$("[data-tab]").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===tab));
@@ -482,29 +493,38 @@ function renderAll(){ paintWho(); applyScope(); renderTodo(); renderPeriodic();
   $("#meta").textContent=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"}); }
 
 function renderTodo(){
-  const admin=IS_ADMIN(), base=scopedItems(), open=base.filter(isOpen);
+  const admin=IS_ADMIN(), other=viewingOther(), base=scopedItems(), open=base.filter(isOpen);
   const isHafta=i=>i.aciliyet==="Bu Hafta";
-  let tiles;
-  if(admin){
-    tiles=[["crit","Kritik",open.filter(i=>prio(i).n===1).length,"crit"]]
-      .concat(sorumluList().filter(n=>n!=="Mete").map(n=>["kisi:"+n,n,open.filter(i=>i.sorumlu===n).length,""]));
-  } else {
-    tiles=[["crit","Kritik",open.filter(i=>prio(i).n===1).length,"crit"],
-           ["hafta","Bu Hafta",open.filter(isHafta).length,""],
-           ["open","Tüm işler",open.length,""]];
-  }
+
+  // banner while standing in someone else's list
+  const vb=$("#viewbar");
+  vb.innerHTML = other
+    ? `<button type="button" class="chip" id="backMine">← Kendi listem</button><span class="viewwho"><small>Bakılan liste</small>${esc(VIEW)}</span>`
+    : "";
+  vb.hidden = !other;
+
+  const tiles=[["crit","Kritik",open.filter(i=>prio(i).n===1).length,"crit"],
+               ["hafta","Bu Hafta",open.filter(isHafta).length,""],
+               ["open","Tüm işler",open.length,""]];
   if(kpiFilter!=="open" && !tiles.some(t=>t[0]===kpiFilter)) kpiFilter="open";
-  $("#kpis").innerHTML=tiles.map(([k,l,v,c])=>{
-    let sub="&nbsp;", cold="";
-    if(admin && k.indexOf("kisi:")===0){ const p=presence[k.slice(5)];
-      sub=esc(relStamp(p&&p.last_seen)); if(isCold(p&&p.last_seen)) cold=" cold"; }
-    return `<button class="kpi ${c}" data-k="${esc(k)}" aria-pressed="${kpiFilter===k}"><div class="l">${esc(l)}</div><div class="v">${v}</div><div class="s${cold}">${sub}</div></button>`;
-  }).join("");
+  $("#kpis").innerHTML=tiles.map(([k,l,v,c])=>
+    `<button class="kpi ${c}" data-k="${esc(k)}" aria-pressed="${kpiFilter===k}"><div class="l">${esc(l)}</div><div class="v">${v}</div></button>`).join("");
+
+  // Mete's team row: open count and when each person last opened the board
+  const team=$("#team");
+  if(admin && !other){
+    const others=sorumluList().filter(n=>n!==ME);
+    team.innerHTML=`<div class="thead">Ekip</div><div class="kpis">`+others.map(n=>{
+      const cnt=items.filter(i=>isOpen(i)&&i.sorumlu===n).length, p=presence[n];
+      return `<button class="kpi" data-view="${esc(n)}"><div class="l">${esc(n)}</div><div class="v">${cnt}</div><div class="s${isCold(p&&p.last_seen)?" cold":""}">${esc(relStamp(p&&p.last_seen))}</div></button>`;
+    }).join("")+`</div>`;
+    team.hidden=false;
+  } else { team.innerHTML=""; team.hidden=true; }
+
   let list;
   if(showDone) list=base.filter(i=>!isOpen(i));
   else if(kpiFilter==="crit") list=open.filter(i=>prio(i).n===1);
   else if(kpiFilter==="hafta") list=open.filter(isHafta);
-  else if(kpiFilter.indexOf("kisi:")===0){ const who=kpiFilter.slice(5); list=open.filter(i=>i.sorumlu===who); }
   else list=open;
   if(fAlan) list=list.filter(i=>i.alan===fAlan); if(fMeslek) list=list.filter(i=>i.meslek===fMeslek); if(fSorumlu) list=list.filter(i=>i.sorumlu===fSorumlu);
   list.sort((a,b)=>prio(a).n-prio(b).n||(a.hedef||"9").localeCompare(b.hedef||"9"));
@@ -553,6 +573,12 @@ function pcard(p){
 // ---------------- events ----------------
 $("nav.tabs").addEventListener("click",e=>{ const b=e.target.closest("[data-tab]"); if(!b) return; tab=b.dataset.tab; $$("[data-tab]").forEach(x=>x.setAttribute("aria-selected",x===b)); $("#tab-todo").hidden=tab!=="todo"; $("#tab-periodic").hidden=tab!=="periodic"; $("#fab").hidden=tab!=="todo"; });
 $("#kpis").addEventListener("click",e=>{ const b=e.target.closest("[data-k]"); if(b){ kpiFilter=b.dataset.k; showDone=false; $("#showDone").setAttribute("aria-pressed","false"); renderTodo(); } });
+$("#team").addEventListener("click",e=>{ const b=e.target.closest("[data-view]"); if(!b) return;
+  VIEW=b.dataset.view; kpiFilter="open"; showDone=false; fAlan=""; fMeslek="";
+  $("#showDone").setAttribute("aria-pressed","false"); applyLists(); renderAll(); window.scrollTo(0,0); });
+$("#viewbar").addEventListener("click",e=>{ if(!e.target.closest("#backMine")) return;
+  VIEW=ME; kpiFilter="open"; showDone=false; fAlan=""; fMeslek="";
+  $("#showDone").setAttribute("aria-pressed","false"); applyLists(); renderAll(); window.scrollTo(0,0); });
 $("#showDone").onclick=()=>{ showDone=!showDone; $("#showDone").setAttribute("aria-pressed",showDone); renderTodo(); };
 $("#fAlan").onchange=e=>{fAlan=e.target.value;renderTodo()}; $("#fMeslek").onchange=e=>{fMeslek=e.target.value;renderTodo()}; $("#fSorumlu").onchange=e=>{fSorumlu=e.target.value;renderTodo()};
 $("#pPrev").onclick=()=>{ pMonth--; if(pMonth<0){pMonth=11;pYear--;} renderPeriodic(); };
@@ -585,7 +611,10 @@ function openDlg(item){ if(!item&&!ME) return showGate();
   if(item){ for(const k of FIELDS) if(form[k]) form[k].value=item[k]??""; if(item.sorumlu&&![...form.sorumlu.options].some(o=>o.value===item.sorumlu)) form.sorumlu.add(new Option(item.sorumlu,item.sorumlu,true,true));
     $("#statusbar").innerHTML=LISTS.durum.map(s=>`<button type="button" class="chip" data-s="${esc(s)}" aria-pressed="${(item.durum||"Açık")===s}">${esc(s)}</button>`).join(""); }
   else { form.meslek.value="Kendi Ekibimiz";
-    form.sorumlu.value = kpiFilter.indexOf("kisi:")===0 ? kpiFilter.slice(5) : (ME || sorumluList()[0]); }
+    // a new card lands on whoever's list you are standing in
+    const target = IS_ADMIN() ? VIEW : ME;
+    if(target && ![...form.sorumlu.options].some(o=>o.value===target)) form.sorumlu.add(new Option(target,target));
+    form.sorumlu.value = target || sorumluList()[0]; }
   // only Mete hands work to other people; everyone else can add only their own
   if(IS_ADMIN()){ form.sorumlu.disabled=false; }
   else { if(![...form.sorumlu.options].some(o=>o.value===ME)) form.sorumlu.add(new Option(ME,ME));
