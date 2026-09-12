@@ -229,12 +229,11 @@ details.more{border-top:1px solid var(--line);padding-top:8px} details.more summ
       <div class="f"><label for="aciliyet">Ne zaman</label><select id="aciliyet" name="aciliyet"></select></div>
       <div class="f"><label for="sorumlu">Sorumlu</label><select id="sorumlu" name="sorumlu" required></select></div>
     </div>
-    <details class="more" id="more"><summary>Detay (açıklama, tarih, maliyet, tedarikçi)</summary>
+    <details class="more" id="more"><summary>Detay (açıklama, tarih, tedarikçi)</summary>
       <div style="display:grid;gap:10px;margin-top:10px">
         <div class="f"><label for="aciklama">Açıklama</label><textarea id="aciklama" name="aciklama"></textarea></div>
-        <div class="grid3">
+        <div class="grid2">
           <div class="f"><label for="hedef">Hedef tarih</label><input id="hedef" name="hedef" type="date"></div>
-          <div class="f"><label for="maliyet">Maliyet (TL)</label><input id="maliyet" name="maliyet" type="number" min="0" step="100" inputmode="numeric"></div>
           <div class="f"><label for="kim">Usta / tedarikçi</label><input id="kim" name="kim" list="kimList"><datalist id="kimList"></datalist></div>
         </div>
         <div class="f"><label for="not">Not / link</label><input id="not" name="not"></div>
@@ -534,7 +533,7 @@ function renderTodo(){
 function card(i){ const p=prio(i), late=i.hedef&&i.hedef<today()&&isOpen(i);
   return `<div class="card" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>
     <div class="main" data-open="${esc(i.id)}"><p class="t">${esc(i.konu)}</p>
-      <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.fotograflar&&i.fotograflar.length?`<span class="dot"></span><span>📎 ${i.fotograflar.length} ek</span>`:""}${i.hedef?`<span class="dot"></span><span class="${late?"late":""}">${late?"Gecikti ":""}${fmtD(i.hedef)}</span>`:""}${i.maliyet?`<span class="dot"></span><span>${fmtTL(+i.maliyet)}</span>`:""}</p></div>
+      <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.fotograflar&&i.fotograflar.length?`<span class="dot"></span><span>📎 ${i.fotograflar.length} ek</span>`:""}${i.hedef?`<span class="dot"></span><span class="${late?"late":""}">${late?"Gecikti ":""}${fmtD(i.hedef)}</span>`:""}</p></div>
     <div class="side">${p.n<=2?`<span class="pill p${p.n}">${p.l}</span>`:""}${isOpen(i)?`<button type="button" class="done-btn" data-done="${esc(i.id)}">✓ Bitti</button>`:`<button type="button" class="done-btn" data-reopen="${esc(i.id)}">Geri aç</button>`}</div></div>`; }
 
 function renderPeriodic(){
@@ -603,9 +602,12 @@ async function undoDoneP(id){ const docId=id+"_"+pYear+"_"+(pMonth+1); const kee
 $("#plist").addEventListener("click",e=>{ const u=e.target.closest("[data-pundo]"); if(u) return undoDoneP(u.dataset.pundo);
   const o=e.target.closest("[data-popen]"); if(o) openP(per.find(x=>x.id===o.dataset.popen)); });
 
-const dlg=$("#dlg"), form=$("#form"), FIELDS=["konu","aciklama","alan","meslek","onem","aciliyet","sorumlu","maliyet","hedef","kim","not"];
+// 'maliyet' is deliberately absent: the cost field was removed from the UI on
+// 12 Sep. The column and its existing values are untouched in the database, and
+// leaving it out of FIELDS means an edit never overwrites them.
+const dlg=$("#dlg"), form=$("#form"), FIELDS=["konu","aciklama","alan","meslek","onem","aciliyet","sorumlu","hedef","kim","not"];
 function openDlg(item){ if(!item&&!ME) return showGate();
-  editing=item||null; form.reset(); applyLists(); $("#more").open=!!item&&!!(item.aciklama||item.hedef||item.maliyet||item.kim||item.not);
+  editing=item||null; form.reset(); applyLists(); $("#more").open=!!item&&!!(item.aciklama||item.hedef||item.kim||item.not);
   $("#dlgTitle").textContent=item?"İş detayı":"Yeni iş"; $("#btnDelete").hidden=!item; $("#statusField").hidden=!item;
   editingFotos=(item&&item.fotograflar?item.fotograflar.slice():[]); renderPhotogrid();
   if(item){ for(const k of FIELDS) if(form[k]) form[k].value=item[k]??""; if(item.sorumlu&&![...form.sorumlu.options].some(o=>o.value===item.sorumlu)) form.sorumlu.add(new Option(item.sorumlu,item.sorumlu,true,true));
@@ -626,7 +628,6 @@ $("#btnCancel").onclick=()=>dlg.close(); $("#fab").onclick=()=>openDlg(null);
 form.onsubmit=async e=>{ e.preventDefault();
   if(editingFotos.some(f=>f.uploading)) return toast("Fotoğraf(lar) hâlâ yükleniyor, birkaç saniye bekleyin");
   const d={}; for(const k of FIELDS) d[k]=(form[k].value||"").trim();
-  d.maliyet=d.maliyet?+d.maliyet:0;
   d.hedef=d.hedef||null;
   d.updated=new Date().toISOString();
   d.fotograflar=editingFotos.map(f=>({ad:f.ad||"",url:f.url||"",path:f.path||"",ct:f.ct||""}));
