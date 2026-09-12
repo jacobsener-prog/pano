@@ -114,7 +114,8 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
 .btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .btn.danger{color:var(--crit)}
 .statusbar{display:flex;gap:6px;flex-wrap:wrap}
-details.more{border-top:1px solid var(--line);padding-top:8px} details.more summary{cursor:pointer;font-weight:600;color:var(--ink2);font-size:14px}
+.more{border-top:1px solid var(--line);padding-top:12px;display:grid;gap:6px}
+.madeon{margin:0;font-size:12px;font-weight:600;color:var(--muted)}
 .photogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
 .phototile{position:relative}
 .photogrid .photobtn{display:block;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg);text-decoration:none;color:inherit;padding:0;cursor:pointer;width:100%;text-align:left}
@@ -222,23 +223,17 @@ details.more{border-top:1px solid var(--line);padding-top:8px} details.more summ
     <div class="f"><label for="konu">Ne yapılacak?</label><input id="konu" name="konu" required placeholder="Örn. Havuz evi klima soğutmuyor"></div>
     <div class="grid2">
       <div class="f"><label for="meslek">Kim yapar (meslek)</label><select id="meslek" name="meslek" required></select></div>
-      <div class="f"><label for="alan">Nerede</label><select id="alan" name="alan"></select></div>
+      <div class="f"><label for="alan">Neresi</label><select id="alan" name="alan"></select></div>
     </div>
     <div class="grid3">
       <div class="f"><label for="onem">Önem</label><select id="onem" name="onem"></select></div>
       <div class="f"><label for="aciliyet">Ne zaman</label><select id="aciliyet" name="aciliyet"></select></div>
       <div class="f"><label for="sorumlu">Sorumlu</label><select id="sorumlu" name="sorumlu" required></select></div>
     </div>
-    <details class="more" id="more"><summary>Detay (açıklama, tarih, tedarikçi)</summary>
-      <div style="display:grid;gap:10px;margin-top:10px">
-        <div class="f"><label for="aciklama">Açıklama</label><textarea id="aciklama" name="aciklama"></textarea></div>
-        <div class="grid2">
-          <div class="f"><label for="hedef">Hedef tarih</label><input id="hedef" name="hedef" type="date"></div>
-          <div class="f"><label for="kim">Usta / tedarikçi</label><input id="kim" name="kim" list="kimList"><datalist id="kimList"></datalist></div>
-        </div>
-        <div class="f"><label for="not">Not / link</label><input id="not" name="not"></div>
-      </div>
-    </details>
+    <div class="more">
+      <div class="f"><label for="aciklama">Notlar</label><textarea id="aciklama" name="aciklama" placeholder="Detay, gözlem, link"></textarea></div>
+      <p class="madeon" id="madeon"></p>
+    </div>
     <div class="f" id="fotoField"><label>Fotoğraf / Belge</label><div class="photogrid" id="photogrid"></div><input type="file" id="fotoInput" accept="image/*,.pdf,application/pdf" multiple hidden></div>
     <div class="f" id="statusField" hidden><label>Durum</label><div class="statusbar" id="statusbar"></div></div>
     <div class="actions">
@@ -403,11 +398,19 @@ function prio(i){ if(!i.onem||!i.aciliyet) return {n:4,l:"Düşük"};
   if(i.onem==="Yüksek"&&i.aciliyet==="Acil") return {n:1,l:"Kritik"};
   if(i.onem==="Yüksek"||i.aciliyet==="Acil") return {n:2,l:"Yüksek"};
   if(i.onem==="Orta"||i.aciliyet==="Bu Hafta") return {n:3,l:"Orta"}; return {n:4,l:"Düşük"}; }
-const isOpen=i=>i.durum!=="Tamamlandı";
+// "Devam ediyor" is still open work. "İptal" is a legacy state from 8 Sep that
+// is no longer offered in the form; it counts as closed so those cards stop
+// inflating everyone's lists.
+const CLOSED=["Tamamlandı","İptal"];
+const isOpen=i=>CLOSED.indexOf(i.durum)<0;
 const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const today=()=>iso(new Date());
 const fmtTL=n=>n?new Intl.NumberFormat("tr-TR").format(n)+" TL":"";
 const fmtD=s=>s?s.split("-").reverse().slice(0,2).join("."):"";
+// "12 Eylül 2026" from either a date or a timestamp
+function fmtLong(s){ if(!s) return "—";
+  const d=new Date(String(s).length<=10 ? s+"T00:00:00" : s);
+  return isNaN(d) ? "—" : d.toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}); }
 // "when did this person last open the board" — relative, from a timestamp
 function relStamp(ts){ if(!ts) return "hiç açmadı";
   const mins=Math.floor((Date.now()-new Date(ts).getTime())/60000);
@@ -432,7 +435,7 @@ function sorumluList(){ return (ME && LISTS.sorumlu.indexOf(ME)<0) ? LISTS.sorum
 function applyLists(){ const SOR=sorumluList();
   fillSel($("#alan"),LISTS.alan,"–"); fillSel($("#meslek"),LISTS.meslek); fillSel($("#onem"),LISTS.onem,"–"); fillSel($("#aciliyet"),LISTS.aciliyet,"–"); fillSel($("#sorumlu"),SOR); fillSel($("#pSorumlu"),SOR);
   fillSel($("#fAlan"),LISTS.alan,"Tüm alanlar"); fillSel($("#fMeslek"),LISTS.meslek,"Tüm meslekler"); fillSel($("#fSorumlu"),SOR,"Herkes");
-  $("#kimList").innerHTML=(LISTS.tedarikci||[]).map(x=>`<option value="${esc(x)}">`).join(""); }
+}
 applyLists();
 
 // ---- photos ----
@@ -526,15 +529,15 @@ function renderTodo(){
   else if(kpiFilter==="hafta") list=open.filter(isHafta);
   else list=open;
   if(fAlan) list=list.filter(i=>i.alan===fAlan); if(fMeslek) list=list.filter(i=>i.meslek===fMeslek); if(fSorumlu) list=list.filter(i=>i.sorumlu===fSorumlu);
-  list.sort((a,b)=>prio(a).n-prio(b).n||(a.hedef||"9").localeCompare(b.hedef||"9"));
+  list.sort((a,b)=>prio(a).n-prio(b).n||(b.created||"").localeCompare(a.created||""));
   if(!list.length){ $("#list").innerHTML=`<div class="empty">${ready?(showDone?"Henüz biten iş yok.":"Bu listede iş yok. 👍"):"Yükleniyor…"}</div>`; return; }
   $("#list").innerHTML=`<div class="rows">${list.map(card).join("")}</div>`;
 }
-function card(i){ const p=prio(i), late=i.hedef&&i.hedef<today()&&isOpen(i);
+function card(i){ const p=prio(i), devam=i.durum==="Devam ediyor";
   return `<div class="card" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>
     <div class="main" data-open="${esc(i.id)}"><p class="t">${esc(i.konu)}</p>
-      <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.fotograflar&&i.fotograflar.length?`<span class="dot"></span><span>📎 ${i.fotograflar.length} ek</span>`:""}${i.hedef?`<span class="dot"></span><span class="${late?"late":""}">${late?"Gecikti ":""}${fmtD(i.hedef)}</span>`:""}</p></div>
-    <div class="side">${p.n<=2?`<span class="pill p${p.n}">${p.l}</span>`:""}${isOpen(i)?`<button type="button" class="done-btn" data-done="${esc(i.id)}">✓ Bitti</button>`:`<button type="button" class="done-btn" data-reopen="${esc(i.id)}">Geri aç</button>`}</div></div>`; }
+      <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.fotograflar&&i.fotograflar.length?`<span class="dot"></span><span>📎 ${i.fotograflar.length} ek</span>`:""}${i.tarih?`<span class="dot"></span><span>${fmtD(i.tarih)}</span>`:""}</p></div>
+    <div class="side">${devam?`<span class="pill prog">Devam</span>`:(p.n<=2?`<span class="pill p${p.n}">${p.l}</span>`:"")}${isOpen(i)?`<button type="button" class="done-btn" data-done="${esc(i.id)}">✓ Bitti</button>`:`<button type="button" class="done-btn" data-reopen="${esc(i.id)}">Geri aç</button>`}</div></div>`; }
 
 function renderPeriodic(){
   const n=new Date(), isCur=(pYear===n.getFullYear()&&pMonth===n.getMonth());
@@ -605,9 +608,11 @@ $("#plist").addEventListener("click",e=>{ const u=e.target.closest("[data-pundo]
 // 'maliyet' is deliberately absent: the cost field was removed from the UI on
 // 12 Sep. The column and its existing values are untouched in the database, and
 // leaving it out of FIELDS means an edit never overwrites them.
-const dlg=$("#dlg"), form=$("#form"), FIELDS=["konu","aciklama","alan","meslek","onem","aciliyet","sorumlu","hedef","kim","not"];
+const dlg=$("#dlg"), form=$("#form"), FIELDS=["konu","aciklama","alan","meslek","onem","aciliyet","sorumlu"];
 function openDlg(item){ if(!item&&!ME) return showGate();
-  editing=item||null; form.reset(); applyLists(); $("#more").open=!!item&&!!(item.aciklama||item.hedef||item.kim||item.not);
+  editing=item||null; form.reset(); applyLists();
+  // creation date, filled by the app, never typed
+  $("#madeon").textContent = item ? ("Oluşturuldu: "+fmtLong(item.created||item.tarih)) : ("Oluşturuldu: "+fmtLong(new Date().toISOString()));
   $("#dlgTitle").textContent=item?"İş detayı":"Yeni iş"; $("#btnDelete").hidden=!item; $("#statusField").hidden=!item;
   editingFotos=(item&&item.fotograflar?item.fotograflar.slice():[]); renderPhotogrid();
   if(item){ for(const k of FIELDS) if(form[k]) form[k].value=item[k]??""; if(item.sorumlu&&![...form.sorumlu.options].some(o=>o.value===item.sorumlu)) form.sorumlu.add(new Option(item.sorumlu,item.sorumlu,true,true));
@@ -628,7 +633,6 @@ $("#btnCancel").onclick=()=>dlg.close(); $("#fab").onclick=()=>openDlg(null);
 form.onsubmit=async e=>{ e.preventDefault();
   if(editingFotos.some(f=>f.uploading)) return toast("Fotoğraf(lar) hâlâ yükleniyor, birkaç saniye bekleyin");
   const d={}; for(const k of FIELDS) d[k]=(form[k].value||"").trim();
-  d.hedef=d.hedef||null;
   d.updated=new Date().toISOString();
   d.fotograflar=editingFotos.map(f=>({ad:f.ad||"",url:f.url||"",path:f.path||"",ct:f.ct||""}));
   try{
