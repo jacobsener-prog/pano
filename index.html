@@ -48,8 +48,11 @@ nav.tabs button[aria-selected="true"] .n{background:var(--bg);color:var(--ink)} 
 .kpi{background:var(--paper);border:1px solid var(--line);padding:10px 10px;border-radius:10px;cursor:pointer;text-align:left;min-width:0}
 .kpi .l{font-size:11px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi .v{font-size:28px;font-weight:700;line-height:1.1;margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:10px;font-weight:600;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.01em}
+.kpi .s.cold{color:var(--crit)}
 .kpi.crit .v{color:var(--crit)}
 .kpi[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)} .kpi[aria-pressed="true"] .l,.kpi[aria-pressed="true"] .v{color:var(--bg)}
+.kpi[aria-pressed="true"] .s,.kpi[aria-pressed="true"] .s.cold{color:var(--bg);opacity:.7}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:500;cursor:pointer;color:var(--ink2)}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -311,7 +314,8 @@ document.getElementById("gateNames").addEventListener("click", e=>{
   // a different person means a different view: clear every filter
   kpiFilter="open"; showDone=false; fAlan=""; fMeslek=""; fSorumlu=""; tab="todo";
   $("#showDone").setAttribute("aria-pressed","false");
-  applyLists(); paintWho(); renderAll();
+  lastTouch=0;
+  applyLists(); paintWho(); renderAll(); refresh();
 });
 // Mete hands out the work, so he sees the whole board. Everyone else sees only
 // what is assigned to them.
@@ -332,7 +336,7 @@ let LISTS={
 };
 const MONTH_NAMES=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let items=[], per=[], perLog={}, ready=false, tab="todo", kpiFilter="open", fAlan="", fMeslek="", fSorumlu="", showDone=false, editing=null, pEditing=null, lastUndo=null, editingFotos=[];
+let items=[], per=[], perLog={}, presence={}, ready=false, tab="todo", kpiFilter="open", fAlan="", fMeslek="", fSorumlu="", showDone=false, editing=null, pEditing=null, lastUndo=null, editingFotos=[];
 const _now=new Date(); let pYear=_now.getFullYear(), pMonth=_now.getMonth(), pKategori="";
 
 function prio(i){ if(!i.onem||!i.aciliyet) return {n:4,l:"Düşük"};
@@ -344,6 +348,17 @@ const iso=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice
 const today=()=>iso(new Date());
 const fmtTL=n=>n?new Intl.NumberFormat("tr-TR").format(n)+" TL":"";
 const fmtD=s=>s?s.split("-").reverse().slice(0,2).join("."):"";
+// "when did this person last open the board" — relative, from a timestamp
+function relStamp(ts){ if(!ts) return "hiç açmadı";
+  const mins=Math.floor((Date.now()-new Date(ts).getTime())/60000);
+  if(mins<2) return "şu an";
+  if(mins<60) return mins+" dk önce";
+  const hrs=Math.floor(mins/60); if(hrs<24) return hrs+" saat önce";
+  const days=Math.floor(hrs/24); if(days===1) return "dün";
+  if(days<30) return days+" gün önce";
+  const months=Math.floor(days/30.44); if(months<12) return months+" ay önce";
+  return Math.floor(months/12)+" yıl önce"; }
+function isCold(ts){ if(!ts) return true; return (Date.now()-new Date(ts).getTime()) > 3*86400000; }
 function relTime(s){ if(!s) return ""; const d=new Date(s+"T00:00:00"); const n=new Date(); n.setHours(0,0,0,0);
   const days=Math.round((n-d)/86400000);
   if(days<0) return "ileri tarih"; if(days===0) return "bugün"; if(days===1) return "dün";
@@ -430,8 +445,12 @@ function renderTodo(){
            ["open","Tüm işler",open.length,""]];
   }
   if(kpiFilter!=="open" && !tiles.some(t=>t[0]===kpiFilter)) kpiFilter="open";
-  $("#kpis").innerHTML=tiles
-    .map(([k,l,v,c])=>`<button class="kpi ${c}" data-k="${esc(k)}" aria-pressed="${kpiFilter===k}"><div class="l">${esc(l)}</div><div class="v">${v}</div></button>`).join("");
+  $("#kpis").innerHTML=tiles.map(([k,l,v,c])=>{
+    let sub="&nbsp;", cold="";
+    if(admin && k.indexOf("kisi:")===0){ const p=presence[k.slice(5)];
+      sub=esc(relStamp(p&&p.last_seen)); if(isCold(p&&p.last_seen)) cold=" cold"; }
+    return `<button class="kpi ${c}" data-k="${esc(k)}" aria-pressed="${kpiFilter===k}"><div class="l">${esc(l)}</div><div class="v">${v}</div><div class="s${cold}">${sub}</div></button>`;
+  }).join("");
   let list;
   if(showDone) list=base.filter(i=>!isOpen(i));
   else if(kpiFilter==="crit") list=open.filter(i=>prio(i).n===1);
@@ -581,15 +600,30 @@ $("#pDeleteLog").onclick=async()=>{ if(!pEditing) return; const docId=pEditing.i
 let tt; function toast(m,undo,ms){ const t=$("#toast"); $("#toastMsg").textContent=m; $("#undo").hidden=!undo; t.classList.add("show"); clearTimeout(tt); tt=setTimeout(()=>{t.classList.remove("show");lastUndo=null;},ms||(undo?5000:2000)); }
 $("#undo").onclick=async()=>{ if(lastUndo){ const f=lastUndo; lastUndo=null; $("#toast").classList.remove("show"); await f(); } };
 
+// ---------------- presence ----------------
+// Stamp "this person had the board open" at most once every 3 minutes, so Mete
+// can see who is actually looking at their list.
+let lastTouch=0;
+async function touchPresence(){
+  if(!ME) return;
+  if(Date.now()-lastTouch < 180000) return;
+  lastTouch=Date.now();
+  const prev=presence[ME];
+  try{ await sbInsert("presence",{id:ME,last_seen:new Date().toISOString(),opens:((prev&&prev.opens)||0)+1},true); }
+  catch(e){ lastTouch=0; }
+}
+
 // ---------------- data ----------------
 let refreshing=false;
 async function refresh(){
   if(refreshing) return; refreshing=true;
   try{
-    const [it,pe,pl,cf] = await Promise.all([ sbGet("items"), sbGet("periodic"), sbGet("periodic_log"), sbGet("config_lists") ]);
+    const [it,pe,pl,cf,pr] = await Promise.all([ sbGet("items"), sbGet("periodic"), sbGet("periodic_log"), sbGet("config_lists"), sbGet("presence").catch(()=>[]) ]);
     items = it.filter(x=>x.konu);
     per = pe.filter(x=>x.gorev);
     perLog = {}; pl.forEach(x=>{ perLog[x.id]=x; });
+    presence = {}; (pr||[]).forEach(x=>{ presence[x.id]=x; });
+    touchPresence();
     if(cf && cf[0] && cf[0].alan){ const c=cf[0]; const nl={}; for(const k of ["alan","meslek","onem","aciliyet","sorumlu","durum","tedarikci"]) if(Array.isArray(c[k])) nl[k]=c[k];
       LISTS=Object.assign({},LISTS,nl); applyLists(); }
     ready=true;
