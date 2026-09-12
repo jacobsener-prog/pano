@@ -308,8 +308,17 @@ document.getElementById("gateNames").addEventListener("click", e=>{
   ME = b.dataset.n;
   try{ localStorage.setItem("pano_kisi", ME); }catch(err){}
   document.getElementById("gate").hidden = true;
-  paintWho(); renderAll();
+  // a different person means a different view: clear every filter
+  kpiFilter="open"; showDone=false; fAlan=""; fMeslek=""; fSorumlu=""; tab="todo";
+  $("#showDone").setAttribute("aria-pressed","false");
+  applyLists(); paintWho(); renderAll();
 });
+// Mete hands out the work, so he sees the whole board. Everyone else sees only
+// what is assigned to them.
+const IS_ADMIN = () => ME === "Mete";
+// Only the todo list is scoped. Periyodik Bakım stays shared: everyone sees all
+// of it, as before.
+const scopedItems = () => IS_ADMIN() ? items : items.filter(i=>i.sorumlu===ME);
 document.getElementById("whoBtn").onclick = showGate;
 
 // ============================================================
@@ -343,8 +352,11 @@ function relTime(s){ if(!s) return ""; const d=new Date(s+"T00:00:00"); const n=
   const years=Math.round(months/12); return years+" yıl önce"; }
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function fillSel(el,arr,blank){ const v=el.value; el.innerHTML=(blank?'<option value="">'+blank+'</option>':'')+arr.map(x=>`<option>${esc(x)}</option>`).join(""); if([...el.options].some(o=>o.value===v)) el.value=v; }
-function applyLists(){ fillSel($("#alan"),LISTS.alan,"–"); fillSel($("#meslek"),LISTS.meslek); fillSel($("#onem"),LISTS.onem,"–"); fillSel($("#aciliyet"),LISTS.aciliyet,"–"); fillSel($("#sorumlu"),LISTS.sorumlu); fillSel($("#pSorumlu"),LISTS.sorumlu);
-  fillSel($("#fAlan"),LISTS.alan,"Tüm alanlar"); fillSel($("#fMeslek"),LISTS.meslek,"Tüm meslekler"); fillSel($("#fSorumlu"),LISTS.sorumlu,"Herkes");
+// whoever is signed in must always be assignable, even if the saved list is behind
+function sorumluList(){ return (ME && LISTS.sorumlu.indexOf(ME)<0) ? LISTS.sorumlu.concat([ME]) : LISTS.sorumlu; }
+function applyLists(){ const SOR=sorumluList();
+  fillSel($("#alan"),LISTS.alan,"–"); fillSel($("#meslek"),LISTS.meslek); fillSel($("#onem"),LISTS.onem,"–"); fillSel($("#aciliyet"),LISTS.aciliyet,"–"); fillSel($("#sorumlu"),SOR); fillSel($("#pSorumlu"),SOR);
+  fillSel($("#fAlan"),LISTS.alan,"Tüm alanlar"); fillSel($("#fMeslek"),LISTS.meslek,"Tüm meslekler"); fillSel($("#fSorumlu"),SOR,"Herkes");
   $("#kimList").innerHTML=(LISTS.tedarikci||[]).map(x=>`<option value="${esc(x)}">`).join(""); }
 applyLists();
 
@@ -380,8 +392,25 @@ function defaultPDate(y,m){ const n=new Date(); if(y===n.getFullYear()&&m===n.ge
 function lastLogFor(taskId){ let best=null; for(const k in perLog){ const l=perLog[k]; if(l.taskId===taskId&&l.tarih&&(!best||l.tarih>best.tarih)) best=l; } return best; }
 
 // ---------------- render ----------------
-function renderAll(){ paintWho(); renderTodo(); renderPeriodic();
-  const open=items.filter(isOpen), crit=open.filter(i=>prio(i).n===1).length;
+// Periyodik Bakım is switched off for now. Flip SHOW_PERIODIC back to true to
+// bring the tab back exactly as it was; the data and its code are untouched.
+const SHOW_PERIODIC = false;
+
+// Show or hide the pieces of the UI that only make sense for the whole board.
+function applyScope(){
+  const admin=IS_ADMIN();
+  $("#fSorumlu").hidden=!admin;
+  if(!admin) fSorumlu="";
+  if(!SHOW_PERIODIC) tab="todo";
+  $("nav.tabs").hidden=!SHOW_PERIODIC;
+  $$("[data-tab]").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===tab));
+  $("#tab-todo").hidden=tab!=="todo";
+  $("#tab-periodic").hidden=tab!=="periodic";
+  $("#fab").hidden=tab!=="todo";
+}
+
+function renderAll(){ paintWho(); applyScope(); renderTodo(); renderPeriodic();
+  const open=scopedItems().filter(isOpen), crit=open.filter(i=>prio(i).n===1).length;
   const nT=$("#nTodo"); nT.textContent=crit?crit+" kritik":open.length; nT.className="n"+(crit?" crit":"");
   const n=new Date(), cy=n.getFullYear(), cm=n.getMonth();
   const remain=per.length-per.filter(p=>logFor(p.id,cy,cm)).length;
@@ -389,11 +418,26 @@ function renderAll(){ paintWho(); renderTodo(); renderPeriodic();
   $("#meta").textContent=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"}); }
 
 function renderTodo(){
-  const open=items.filter(isOpen);
-  const crit=open.filter(i=>prio(i).n===1), omer=open.filter(i=>i.sorumlu==="Ömer"), yasemin=open.filter(i=>i.sorumlu==="Yasemin"), ayse=open.filter(i=>i.sorumlu==="Ayşe"), mehmet=open.filter(i=>i.sorumlu==="Mehmet");
-  $("#kpis").innerHTML=[["crit","Kritik",crit.length,"crit"],["omer","Ömer",omer.length,""],["yasemin","Yasemin",yasemin.length,""],["ayse","Ayşe",ayse.length,""],["mehmet","Mehmet",mehmet.length,""]]
-    .map(([k,l,v,c])=>`<button class="kpi ${c}" data-k="${k}" aria-pressed="${kpiFilter===k}"><div class="l">${l}</div><div class="v">${v}</div></button>`).join("");
-  let list=showDone?items.filter(i=>!isOpen(i)):items.filter(i=>kpiFilter==="crit"?(isOpen(i)&&prio(i).n===1):kpiFilter==="omer"?(isOpen(i)&&i.sorumlu==="Ömer"):kpiFilter==="yasemin"?(isOpen(i)&&i.sorumlu==="Yasemin"):kpiFilter==="ayse"?(isOpen(i)&&i.sorumlu==="Ayşe"):kpiFilter==="mehmet"?(isOpen(i)&&i.sorumlu==="Mehmet"):isOpen(i));
+  const admin=IS_ADMIN(), base=scopedItems(), open=base.filter(isOpen);
+  const isLate=i=>i.hedef&&i.hedef<today();
+  let tiles;
+  if(admin){
+    tiles=[["crit","Kritik",open.filter(i=>prio(i).n===1).length,"crit"]]
+      .concat(sorumluList().filter(n=>n!=="Mete").map(n=>["kisi:"+n,n,open.filter(i=>i.sorumlu===n).length,""]));
+  } else {
+    tiles=[["crit","Kritik",open.filter(i=>prio(i).n===1).length,"crit"],
+           ["open","Açık",open.length,""],
+           ["late","Gecikmiş",open.filter(isLate).length,"crit"]];
+  }
+  if(kpiFilter!=="open" && !tiles.some(t=>t[0]===kpiFilter)) kpiFilter="open";
+  $("#kpis").innerHTML=tiles
+    .map(([k,l,v,c])=>`<button class="kpi ${c}" data-k="${esc(k)}" aria-pressed="${kpiFilter===k}"><div class="l">${esc(l)}</div><div class="v">${v}</div></button>`).join("");
+  let list;
+  if(showDone) list=base.filter(i=>!isOpen(i));
+  else if(kpiFilter==="crit") list=open.filter(i=>prio(i).n===1);
+  else if(kpiFilter==="late") list=open.filter(isLate);
+  else if(kpiFilter.indexOf("kisi:")===0){ const who=kpiFilter.slice(5); list=open.filter(i=>i.sorumlu===who); }
+  else list=open;
   if(fAlan) list=list.filter(i=>i.alan===fAlan); if(fMeslek) list=list.filter(i=>i.meslek===fMeslek); if(fSorumlu) list=list.filter(i=>i.sorumlu===fSorumlu);
   list.sort((a,b)=>prio(a).n-prio(b).n||(a.hedef||"9").localeCompare(b.hedef||"9"));
   if(!list.length){ $("#list").innerHTML=`<div class="empty">${ready?(showDone?"Henüz biten iş yok.":"Bu listede iş yok. 👍"):"Yükleniyor…"}</div>`; return; }
@@ -473,8 +517,11 @@ function openDlg(item){ if(!item&&!ME) return showGate();
   if(item){ for(const k of FIELDS) if(form[k]) form[k].value=item[k]??""; if(item.sorumlu&&![...form.sorumlu.options].some(o=>o.value===item.sorumlu)) form.sorumlu.add(new Option(item.sorumlu,item.sorumlu,true,true));
     $("#statusbar").innerHTML=LISTS.durum.map(s=>`<button type="button" class="chip" data-s="${esc(s)}" aria-pressed="${(item.durum||"Açık")===s}">${esc(s)}</button>`).join(""); }
   else { form.meslek.value="Kendi Ekibimiz";
-    const guess = kpiFilter==="omer"?"Ömer":kpiFilter==="yasemin"?"Yasemin":kpiFilter==="ayse"?"Ayşe":kpiFilter==="mehmet"?"Mehmet":(LISTS.sorumlu.indexOf(ME)>=0?ME:LISTS.sorumlu[0]);
-    form.sorumlu.value=guess; }
+    form.sorumlu.value = kpiFilter.indexOf("kisi:")===0 ? kpiFilter.slice(5) : (ME || sorumluList()[0]); }
+  // only Mete hands work to other people; everyone else can add only their own
+  if(IS_ADMIN()){ form.sorumlu.disabled=false; }
+  else { if(![...form.sorumlu.options].some(o=>o.value===ME)) form.sorumlu.add(new Option(ME,ME));
+         form.sorumlu.value=ME; form.sorumlu.disabled=true; }
   dlg.showModal(); if(!item) setTimeout(()=>form.konu.focus(),50); }
 $("#statusbar").addEventListener("click",e=>{ const b=e.target.closest("[data-s]"); if(!b||!editing) return; editing.durum=b.dataset.s; $$("#statusbar .chip").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
 $("#btnCancel").onclick=()=>dlg.close(); $("#fab").onclick=()=>openDlg(null);
@@ -517,9 +564,9 @@ function openP(p){ if(!ME) return showGate();
   pEditing=p; applyLists(); const log=logFor(p.id,pYear,pMonth);
   $("#pTitle").textContent=p.gorev; $("#pDesc").textContent=[p.kategori,p.donem,p.meslek].filter(Boolean).join(" · ");
   $("#pLast").value=log?(log.tarih||defaultPDate(pYear,pMonth)):defaultPDate(pYear,pMonth);
-  const who = log?(log.sorumlu||p.sorumlu||LISTS.sorumlu[0]):(LISTS.sorumlu.indexOf(ME)>=0?ME:(p.sorumlu||LISTS.sorumlu[0]));
+  const who = IS_ADMIN() ? (log?(log.sorumlu||p.sorumlu||sorumluList()[0]):(ME||p.sorumlu||sorumluList()[0])) : ME;
   if(![...$("#pSorumlu").options].some(o=>o.value===who)) $("#pSorumlu").add(new Option(who,who));
-  $("#pSorumlu").value=who;
+  $("#pSorumlu").value=who; $("#pSorumlu").disabled=!IS_ADMIN();
   $("#pNot").value=log?(log.not||""):""; $("#pDeleteLog").hidden=!log; pdlg.showModal(); }
 $("#pCancel").onclick=()=>pdlg.close();
 $("#pform").onsubmit=async e=>{ e.preventDefault(); if(!pEditing) return; if(!$("#pLast").value) return toast("Tarih girin");
