@@ -392,7 +392,7 @@ document.getElementById("whoBtn").onclick = showGate;
 // ============================================================
 let LISTS={
   alan:["Ana Ev","Havuz Evi","Havuz","Bahçe","Konteyner","Giriş / Yollar","Genel"],
-  meslek:["Elektrikçi","Tesisatçı","Havuzcu","Klimacı","Boyacı / Alçıcı","İnşaat Ustası","Marangoz","Doğramacı","Demirci","Bahçıvan","Temizlik","Satın Alma","Finans/Vergi","Kendi Ekibimiz"],
+  meslek:["Elektrikçi","Tesisatçı","Havuzcu","Klimacı","Boyacı / Alçıcı","İnşaat Ustası","Çatıcı","Marangoz","Doğramacı","Demirci","Bahçıvan","Temizlik","Satın Alma","Finans/Vergi","Avukat","Kendi Ekibimiz"],
   onem:["Yüksek","Orta","Düşük"], aciliyet:["Acil","Bu Hafta","Bu Ay","Sezon Sonu"], sorumlu:["Ömer","Mete","Ayşe","Yasemin","Mehmet"],
   durum:["Açık","Tamamlandı"], tedarikci:[]
 };
@@ -629,10 +629,11 @@ function openDlg(item){ if(!item&&!ME) return showGate();
     const target = IS_ADMIN() ? VIEW : ME;
     if(target && ![...form.sorumlu.options].some(o=>o.value===target)) form.sorumlu.add(new Option(target,target));
     form.sorumlu.value = target || sorumluList()[0]; }
-  // only Mete hands work to other people; everyone else can add only their own
+  // Mete hands work to anyone; everyone else picks themselves or Mete (13 Sep)
   if(IS_ADMIN()){ form.sorumlu.disabled=false; }
-  else { if(![...form.sorumlu.options].some(o=>o.value===ME)) form.sorumlu.add(new Option(ME,ME));
-         form.sorumlu.value=ME; form.sorumlu.disabled=true; }
+  else { const cur=(item&&item.sorumlu)?item.sorumlu:ME;
+         const allowed=[ME,"Mete",cur].filter((v,i,a)=>v&&a.indexOf(v)===i);
+         fillSel(form.sorumlu,allowed); form.sorumlu.value=cur; form.sorumlu.disabled=false; }
   dlg.showModal(); if(!item) setTimeout(()=>form.konu.focus(),50); }
 $("#statusbar").addEventListener("click",e=>{ const b=e.target.closest("[data-s]"); if(!b||!editing) return; editing.durum=b.dataset.s; $$("#statusbar .chip").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
 $("#btnCancel").onclick=()=>dlg.close(); $("#fab").onclick=()=>openDlg(null);
