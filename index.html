@@ -91,6 +91,12 @@ section.group{margin-top:14px}
 .card .m b{font-weight:600;color:var(--ink)}
 .card .m .dot::before{content:"·";color:var(--muted)}
 .card .late{color:var(--crit);font-weight:600}
+.card.pic{grid-template-columns:6px auto 1fr auto}
+.card .thumb{display:flex;align-items:center;padding:10px 0 10px 10px;cursor:pointer}
+.card .ph{position:relative;width:56px;height:56px;border-radius:8px;overflow:hidden;border:1px solid var(--line);background:var(--mid);flex:none}
+.card .ph img{width:100%;height:100%;object-fit:cover;display:block}
+.card .ph .n{position:absolute;right:2px;bottom:2px;background:rgba(20,18,16,.72);color:#fff;font-size:10px;font-weight:700;border-radius:999px;padding:1px 6px;letter-spacing:.02em}
+@media (max-width:420px){ .card .ph{width:50px;height:50px} .card .thumb{padding-left:8px} }
 .card .side{display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;padding:10px 10px 10px 4px}
 .pill{display:inline-block;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:700;white-space:nowrap}
 .pill.p1{background:var(--crit);color:var(--crit-ink)} .pill.p2{background:var(--high);color:var(--ink)} .pill.p3{background:var(--mid);color:var(--ink)} .pill.p4{background:var(--low);color:var(--ink)}
@@ -544,9 +550,11 @@ function renderTodo(){
   $("#list").innerHTML=`<div class="rows">${list.map(card).join("")}</div>`;
 }
 function card(i){ const p=prio(i), devam=i.durum==="Devam ediyor";
-  return `<div class="card" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>
+  // first photo shows as a thumbnail left of the text; the rest are a count badge
+  const fot=(i.fotograflar||[]).filter(f=>f&&f.url), thumb=fot.length?`<div class="thumb" data-open="${esc(i.id)}"><span class="ph"><img src="${esc(fot[0].url)}" alt="" loading="lazy" decoding="async">${fot.length>1?`<span class="n">${fot.length}</span>`:""}</span></div>`:"";
+  return `<div class="card${fot.length?" pic":""}" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>${thumb}
     <div class="main" data-open="${esc(i.id)}"><p class="t">${esc(i.konu)}</p>
-      <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.fotograflar&&i.fotograflar.length?`<span class="dot"></span><span>📎 ${i.fotograflar.length} ek</span>`:""}${i.tarih?`<span class="dot"></span><span>${fmtD(i.tarih)}</span>`:""}</p></div>
+      <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.tarih?`<span class="dot"></span><span>${fmtD(i.tarih)}</span>`:""}</p></div>
     <div class="side">${devam?`<span class="pill prog">Devam</span>`:(p.n<=2?`<span class="pill p${p.n}">${p.l}</span>`:"")}${isOpen(i)?`<button type="button" class="done-btn" data-done="${esc(i.id)}">✓ Bitti</button>`:`<button type="button" class="done-btn" data-reopen="${esc(i.id)}">Geri aç</button>`}</div></div>`; }
 
 function renderPeriodic(){
