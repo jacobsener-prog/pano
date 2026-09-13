@@ -392,7 +392,7 @@ document.getElementById("whoBtn").onclick = showGate;
 // ============================================================
 let LISTS={
   alan:["Ana Ev","Havuz Evi","Havuz","Bahçe","Konteyner","Giriş / Yollar","Genel"],
-  meslek:["Elektrikçi","Tesisatçı","Havuzcu","Klimacı","Boyacı / Alçıcı","İnşaat Ustası","Çatıcı","Marangoz","Doğramacı","Demirci","Bahçıvan","Temizlik","Satın Alma","Finans/Vergi","Avukat","Kendi Ekibimiz"],
+  meslek:["Avukat","Bahçıvan","Boyacı / Alçıcı","Çatıcı","Demirci","Doğramacı","Elektrikçi","Finans/Vergi","Havuzcu","İnşaat Ustası","Kendi Ekibimiz","Klimacı","Marangoz","Satın Alma","Temizlik","Tesisatçı"],
   onem:["Yüksek","Orta","Düşük"], aciliyet:["Acil","Bu Hafta","Bu Ay","Sezon Sonu"], sorumlu:["Ömer","Mete","Ayşe","Yasemin","Mehmet"],
   durum:["Açık","Tamamlandı"], tedarikci:[]
 };
@@ -438,10 +438,13 @@ function relTime(s){ if(!s) return ""; const d=new Date(s+"T00:00:00"); const n=
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 function fillSel(el,arr,blank){ const v=el.value; el.innerHTML=(blank?'<option value="">'+blank+'</option>':'')+arr.map(x=>`<option>${esc(x)}</option>`).join(""); if([...el.options].some(o=>o.value===v)) el.value=v; }
 // whoever is signed in must always be assignable, even if the saved list is behind
+// meslek dropdowns are always shown A-Z in Turkish collation, whatever order
+// the list arrives in from pano_config (13 Sep)
+function trSort(a){ return a.slice().sort((x,y)=>x.localeCompare(y,"tr")); }
 function sorumluList(){ return (ME && LISTS.sorumlu.indexOf(ME)<0) ? LISTS.sorumlu.concat([ME]) : LISTS.sorumlu; }
 function applyLists(){ const SOR=sorumluList();
-  fillSel($("#alan"),LISTS.alan,"–"); fillSel($("#meslek"),LISTS.meslek); fillSel($("#onem"),LISTS.onem,"–"); fillSel($("#aciliyet"),LISTS.aciliyet,"–"); fillSel($("#sorumlu"),SOR); fillSel($("#pSorumlu"),SOR);
-  fillSel($("#fAlan"),LISTS.alan,"Tüm alanlar"); fillSel($("#fMeslek"),LISTS.meslek,"Tüm meslekler"); fillSel($("#fSorumlu"),SOR,"Herkes");
+  fillSel($("#alan"),LISTS.alan,"–"); fillSel($("#meslek"),trSort(LISTS.meslek)); fillSel($("#onem"),LISTS.onem,"–"); fillSel($("#aciliyet"),LISTS.aciliyet,"–"); fillSel($("#sorumlu"),SOR); fillSel($("#pSorumlu"),SOR);
+  fillSel($("#fAlan"),LISTS.alan,"Tüm alanlar"); fillSel($("#fMeslek"),trSort(LISTS.meslek),"Tüm meslekler"); fillSel($("#fSorumlu"),SOR,"Herkes");
 }
 applyLists();
 
