@@ -158,6 +158,8 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
 .photoremove{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:999px;border:0;background:rgba(20,18,16,.72);color:#fff;font-size:12px;font-weight:700;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center}
 .addtile{aspect-ratio:4/3;border:1.5px dashed var(--line);border-radius:9px;background:transparent;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--ink2);font-size:22px;cursor:pointer;text-align:center;width:100%}
 .addtile span{font-size:11px;font-weight:600}
+#fotoField.dropping{outline:2px dashed var(--ink2);outline-offset:5px;border-radius:10px;background:var(--mid)}
+#fotoField.dropping .addtile{border-color:var(--ink2);color:var(--ink)}
 .lightbox{background:transparent;max-width:96vw;width:auto}
 .lightbox::backdrop{background:rgba(10,9,8,.86)}
 .lbwrap{position:relative;display:grid;gap:8px;justify-items:center;padding:0}
@@ -514,13 +516,31 @@ $("#photogrid").addEventListener("click",e=>{
   const fotos=$("#photogrid")._fotos||[]; const f=fotos[+b.dataset.photo]; if(!f||f.uploading) return;
   if(isImageFoto(f)){ $("#lbImg").src=photoSrc(f); $("#lbImg").alt=f.ad||""; $("#lbCap").textContent=f.ad||""; lightbox.showModal(); }
   else { const src=photoSrc(f); if(src) window.open(src,"_blank","noopener"); } });
-$("#fotoInput").addEventListener("change",async e=>{ const files=[...e.target.files]; e.target.value="";
+async function addFotoFiles(files){
   for(const file of files){
     if(file.size > 20*1024*1024){ toast("Dosya çok büyük (20MB üzeri)"); continue; }
     const rec={ad:file.name,url:"",uploading:true}; editingFotos.push(rec); renderPhotogrid();
     try{ const r=await sbUpload(file); rec.path=r.path; rec.url=r.url; rec.ct=r.ct; rec.uploading=false; renderPhotogrid(); }
     catch(err){ editingFotos.splice(editingFotos.indexOf(rec),1); renderPhotogrid(); toast("Yüklenemedi"); }
-  } });
+  }
+}
+$("#fotoInput").addEventListener("change",e=>{ const files=[...e.target.files]; e.target.value=""; addFotoFiles(files); });
+
+// Drag & drop onto the photo area of the card form. Files only; anything
+// dropped elsewhere is swallowed so the browser does not navigate away.
+(function(){
+  const zone=$("#fotoField"); if(!zone) return;
+  const hasFiles=e=>{ const dt=e.dataTransfer; return !!dt && Array.prototype.indexOf.call(dt.types||[],"Files")>-1; };
+  let depth=0;
+  const off=()=>{ depth=0; zone.classList.remove("dropping"); };
+  zone.addEventListener("dragenter",e=>{ if(!hasFiles(e)) return; e.preventDefault(); depth++; zone.classList.add("dropping"); });
+  zone.addEventListener("dragover",e=>{ if(!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect="copy"; zone.classList.add("dropping"); });
+  zone.addEventListener("dragleave",e=>{ if(!hasFiles(e)) return; depth--; if(depth<=0) off(); });
+  zone.addEventListener("drop",e=>{ if(!hasFiles(e)) return; e.preventDefault(); e.stopPropagation(); off();
+    const files=Array.prototype.slice.call(e.dataTransfer.files||[]); if(files.length) addFotoFiles(files); });
+  window.addEventListener("dragover",e=>{ if(hasFiles(e)) e.preventDefault(); });
+  window.addEventListener("drop",e=>{ if(hasFiles(e)){ e.preventDefault(); off(); } });
+})();
 
 // ---- periodic helpers ----
 function logFor(taskId,y,m){ return perLog[taskId+"_"+y+"_"+(m+1)]; }
