@@ -20,6 +20,7 @@
   --bg:#F3EFE9; --paper:#FFFFFF; --ink:#2B2A2C; --ink2:#5E5B58; --muted:#8C8681; --line:#D9D2C7; --olive:#6F6A50; --moss:#5F6B4C;
   --crit:#B3705A; --crit-ink:#FFFFFF; --high:#D9B3A3; --mid:#E8DFCF; --low:#BFC7AE; --done:#E4DFD8; --wait:#E8DFCF; --prog:#B7C0C8;
   --crit-bg:#FAE7E0; --crit-line:#E2B7A6;
+  --new-bg:#E7F1F8; --new-line:#BBD6E8; --new:#3E7FA6; --new-ink:#FFFFFF;
   --shadow:0 1px 0 rgba(43,42,44,.05), 0 6px 18px -12px rgba(43,42,44,.25);
 }
 @media (prefers-color-scheme: dark){
@@ -27,6 +28,7 @@
     --bg:#1E1C1A; --paper:#2A2725; --ink:#F1ECE5; --ink2:#CFC7BD; --muted:#948C83; --line:#403B36; --olive:#B3A985; --moss:#A3AE8B;
     --crit:#C07E66; --crit-ink:#1E1C1A; --high:#7D5F55; --mid:#4E4539; --low:#55604A; --done:#33302D; --wait:#4E4539; --prog:#465058;
     --crit-bg:#3B2823; --crit-line:#6B463A;
+    --new-bg:#1F2C35; --new-line:#3A5A70; --new:#7FB4D6; --new-ink:#14212A;
     --shadow:0 1px 0 rgba(0,0,0,.2), 0 6px 18px -12px rgba(0,0,0,.6);
   }
 }
@@ -34,6 +36,7 @@
   --bg:#1E1C1A; --paper:#2A2725; --ink:#F1ECE5; --ink2:#CFC7BD; --muted:#948C83; --line:#403B36; --olive:#B3A985; --moss:#A3AE8B;
   --crit:#C07E66; --crit-ink:#1E1C1A; --high:#7D5F55; --mid:#4E4539; --low:#55604A; --done:#33302D; --wait:#4E4539; --prog:#465058;
   --crit-bg:#3B2823; --crit-line:#6B463A;
+  --new-bg:#1F2C35; --new-line:#3A5A70; --new:#7FB4D6; --new-ink:#14212A;
   --shadow:0 1px 0 rgba(0,0,0,.2), 0 6px 18px -12px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
@@ -92,6 +95,10 @@ section.group{margin-top:14px}
 .rows{display:grid;gap:8px}
 .card{display:grid;grid-template-columns:6px 1fr auto;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
 .card.hide{display:none}
+/* a card the person has not opened yet reads light blue and carries a YENİ
+   pill. Kritik is stronger, so .card.crit is defined after this on purpose. */
+.card.new{background:var(--new-bg);border-color:var(--new-line)}
+.card.new .ph{background:var(--new-line);border-color:var(--new-line)}
 /* open Kritik work (Önem Yüksek + Ne zaman Acil) reads red at a glance, for everyone */
 .card.crit{background:var(--crit-bg);border-color:var(--crit-line)}
 .card.crit .ph{background:var(--crit-line);border-color:var(--crit-line)}
@@ -115,6 +122,9 @@ section.group{margin-top:14px}
 .pill{display:inline-block;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:700;white-space:nowrap}
 .pill.p1{background:var(--crit);color:var(--crit-ink)} .pill.p2{background:var(--high);color:var(--ink)} .pill.p3{background:var(--mid);color:var(--ink)} .pill.p4{background:var(--low);color:var(--ink)}
 .pill.wait{background:var(--wait);color:var(--ink)} .pill.prog{background:var(--prog);color:var(--ink)}
+.pill.new{background:var(--new);color:var(--new-ink);font-size:11px;padding:2px 7px;margin-right:6px;vertical-align:2px;letter-spacing:.03em}
+.pushbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--new-bg);border:1px solid var(--new-line);border-radius:12px;padding:10px 12px;margin:0 0 10px;font-size:14px}
+.pushbar[hidden]{display:none}
 .done-btn{border:2px solid var(--moss);background:transparent;color:var(--moss);border-radius:9px;padding:8px 14px;font-size:15px;font-weight:700;cursor:pointer;min-width:92px}
 .done-btn:hover,.done-btn:focus-visible{background:var(--moss);color:#fff;outline:none}
 .done-btn:disabled{opacity:.5}
@@ -211,6 +221,7 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
 
   <div id="tab-todo">
     <div class="viewbar" id="viewbar" hidden></div>
+    <div class="pushbar" id="pushbar" hidden></div>
     <div class="searchrow">
       <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
       <input type="search" id="q" placeholder="İş ara…" aria-label="İş ara" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
@@ -299,13 +310,19 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
 // one. The board lives in the pano_* tables; the bucket is pano-fotograflar.
 const SB_URL = "https://jkeekuxpmbasgrsdrymy.supabase.co";
 const SB_KEY = "sb_publishable_5wRvqbONlp_n25Y6nndR5Q_Tyfyfu8_";
-const T = { items:"pano_items", periodic:"pano_periodic", log:"pano_periodic_log", presence:"pano_presence", config:"pano_config" };
+const T = { items:"pano_items", periodic:"pano_periodic", log:"pano_periodic_log", presence:"pano_presence", config:"pano_config", gorulen:"pano_gorulen", push:"pano_push" };
 const BUCKET = "pano-fotograflar";
 const REST = SB_URL + "/rest/v1";
 const H = () => ({ apikey: SB_KEY, Authorization: "Bearer " + SB_KEY, "Content-Type": "application/json" });
 
 async function sbGet(table){
   const r = await fetch(REST + "/" + table + "?select=*", { cache:"no-store", headers:H() });
+  if(!r.ok) throw new Error(table + " " + r.status + " " + (await r.text()));
+  return r.json();
+}
+// same, but with a PostgREST query string, so a table can be filtered server-side
+async function sbGetQ(table, qs){
+  const r = await fetch(REST + "/" + table + "?" + qs, { cache:"no-store", headers:H() });
   if(!r.ok) throw new Error(table + " " + r.status + " " + (await r.text()));
   return r.json();
 }
@@ -396,7 +413,8 @@ document.getElementById("gcYes").addEventListener("click", ()=>{
   kpiFilter="open"; showDone=false; fAlan=""; fMeslek=""; fSorumlu=""; q=""; $("#q").value=""; tab="todo";
   $("#showDone").setAttribute("aria-pressed","false");
   lastTouch=0;
-  applyLists(); paintWho(); renderAll(); refresh();
+  seen = {};
+  applyLists(); paintWho(); renderAll(); refresh(); resubscribe();
 });
 // Mete hands out the work, so he sees the whole board. Everyone else sees only
 // what is assigned to them.
@@ -526,7 +544,7 @@ function applyScope(){
   $("#fab").hidden=tab!=="todo";
 }
 
-function renderAll(){ paintWho(); applyScope(); renderTodo(); renderPeriodic();
+function renderAll(){ paintWho(); applyScope(); renderTodo(); renderPeriodic(); paintPushbar(); paintBadge();
   const open=scopedItems().filter(isOpen), crit=open.filter(i=>prio(i).n===1).length;
   const nT=$("#nTodo"); nT.textContent=crit?crit+" kritik":open.length; nT.className="n"+(crit?" crit":"");
   const n=new Date(), cy=n.getFullYear(), cm=n.getMonth();
@@ -578,8 +596,8 @@ function renderTodo(){
 function card(i){ const p=prio(i), devam=i.durum==="Devam ediyor";
   // first photo shows as a thumbnail left of the text; the rest are a count badge
   const fot=(i.fotograflar||[]).filter(f=>f&&f.url), thumb=fot.length?`<div class="thumb" data-open="${esc(i.id)}"><span class="ph"><img src="${esc(fot[0].url)}" alt="" loading="lazy" decoding="async">${fot.length>1?`<span class="n">${fot.length}</span>`:""}</span></div>`:"";
-  return `<div class="card${fot.length?" pic":""}${p.n===1&&isOpen(i)?" crit":""}" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>${thumb}
-    <div class="main" data-open="${esc(i.id)}"><p class="t">${esc(i.konu)}</p>
+  return `<div class="card${fot.length?" pic":""}${isNew(i)?" new":""}${p.n===1&&isOpen(i)?" crit":""}" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>${thumb}
+    <div class="main" data-open="${esc(i.id)}"><p class="t">${isNew(i)?`<span class="pill new">YENİ</span>`:""}${esc(i.konu)}</p>
       <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.tarih?`<span class="dot"></span><span>${fmtD(i.tarih)}</span>`:""}</p></div>
     <div class="side">${devam?`<span class="pill prog">Devam</span>`:(p.n<=2?`<span class="pill p${p.n}">${p.l}</span>`:"")}${isOpen(i)?`<button type="button" class="done-btn" data-done="${esc(i.id)}">✓ Bitti</button>`:`<button type="button" class="done-btn" data-reopen="${esc(i.id)}">Geri aç</button>`}</div></div>`; }
 
@@ -657,6 +675,8 @@ $("#plist").addEventListener("click",e=>{ const u=e.target.closest("[data-pundo]
 // leaving it out of FIELDS means an edit never overwrites them.
 const dlg=$("#dlg"), form=$("#form"), FIELDS=["konu","aciklama","alan","meslek","onem","aciliyet","sorumlu"];
 function openDlg(item){ if(!item&&!ME) return showGate();
+  // opening your own card is what clears its YENİ mark, here and on the icon
+  if(item && item.sorumlu===ME && !seen[item.id]) markSeen(item.id).then(()=>{ renderTodo(); paintBadge(); });
   editing=item||null; form.reset(); applyLists();
   // creation date, filled by the app, never typed
   $("#madeon").textContent = item ? ("Oluşturuldu: "+fmtLong(item.created||item.tarih)) : ("Oluşturuldu: "+fmtLong(new Date().toISOString()));
@@ -693,6 +713,9 @@ form.onsubmit=async e=>{ e.preventDefault();
     } else {
       const id="i"+Date.now().toString(36);
       d.id=id; d.durum="Açık"; d.tamamlandi=null; d.tarih=today(); d.created=d.updated; d.kaynak="pano";
+      // mark it seen first: that keeps your own card off your YENİ list and
+      // stops the database trigger from pushing a notification back at you
+      if(d.sorumlu===ME) await markSeen(id, ME);
       await sbInsert(T.items,d);
       items.push(Object.assign({},d));
       toast("Eklendi");
@@ -744,6 +767,98 @@ async function touchPresence(){
   catch(e){ lastTouch=0; }
 }
 
+// ============================================================
+// YENİ cards, and the red number on the phone icon (14 Sep)
+// ============================================================
+// "New" is per person, not per card: a card stays new until the person it is
+// assigned to opens it. The marks live in pano_gorulen so they follow someone
+// from phone to laptop, and the same count is what the app icon badge shows.
+// Kritik still wins the colour - see .card.crit in the stylesheet.
+
+let seen = {};   // item_id -> true, for ME only
+const VAPID_PUBLIC = "BLXVih6FMHnL4YFtZ5MJw2TnS9Hxwra0zgv_CAQEKOaNow9bJpGIYmw9DY8IsK5scwLOeBJvHdX5oMzz7cjPrr0";
+
+function isNew(i){ return !!ME && VIEW === ME && i.sorumlu === ME && isOpen(i) && !seen[i.id]; }
+function newCount(){ return items.filter(isNew).length; }
+
+async function loadSeen(){
+  if(!ME){ seen = {}; return; }
+  try{
+    const rows = await sbGetQ(T.gorulen, "select=item_id&kisi=eq." + encodeURIComponent(ME));
+    const s = {}; (rows||[]).forEach(r=>{ s[r.item_id] = true; }); seen = s;
+  }catch(err){ /* keep whatever marks we already had */ }
+}
+
+async function markSeen(id, kisi){
+  const who = kisi || ME; if(!who || !id) return;
+  if(who === ME){ if(seen[id]) return; seen[id] = true; }
+  try{ await sbInsert(T.gorulen, {kisi:who, item_id:id, gorulen_at:new Date().toISOString()}, true); }
+  catch(err){ if(who === ME) delete seen[id]; }
+}
+
+function paintBadge(){
+  try{
+    const n = newCount();
+    if(navigator.setAppBadge){ n ? navigator.setAppBadge(n) : navigator.clearAppBadge(); }
+  }catch(err){}
+}
+
+// ---- phone notifications ----
+// iPhone only allows this from an app added to the Home Screen, and only after
+// the person taps something, which is what the bar under the search box is for.
+const pushOk = () => "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent);
+const installed = () => (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true;
+
+function u8(s){
+  const pad = "=".repeat((4 - s.length % 4) % 4);
+  const raw = atob((s + pad).replace(/-/g,"+").replace(/_/g,"/"));
+  const a = new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++) a[i] = raw.charCodeAt(i);
+  return a;
+}
+
+function paintPushbar(){
+  const el = document.getElementById("pushbar"); if(!el) return;
+  const can = !!ME && pushOk() && (installed() || !isIOS());
+  const show = can && Notification.permission === "default";
+  el.innerHTML = show
+    ? '<span>Yeni i\u015f geldi\u011finde telefonuna bildirim gelsin mi?</span><button type="button" class="chip" id="pushOn">Bildirimleri a\u00e7</button>'
+    : "";
+  el.hidden = !show;
+}
+
+async function enablePush(){
+  if(!pushOk() || !ME) return;
+  try{
+    const perm = await Notification.requestPermission();
+    paintPushbar();
+    if(perm !== "granted") return toast("Bildirim izni verilmedi");
+    const reg = await navigator.serviceWorker.register("push-sw.js");
+    await navigator.serviceWorker.ready;
+    let sub = await reg.pushManager.getSubscription();
+    if(!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:u8(VAPID_PUBLIC) });
+    const j = sub.toJSON();
+    await sbInsert(T.push, { endpoint:j.endpoint, kisi:ME, p256dh:j.keys.p256dh, auth:j.keys.auth }, true);
+    toast("Bildirimler a\u00e7\u0131k");
+  }catch(err){
+    toast("Bildirim a\u00e7\u0131lamad\u0131: " + String((err && err.message) || err).slice(0,90), false, 7000);
+  }
+}
+document.addEventListener("click", e=>{ if(e.target && e.target.id === "pushOn") enablePush(); });
+
+// keep the stored subscription pointing at the right person after a name change
+async function resubscribe(){
+  if(!pushOk() || !ME || Notification.permission !== "granted") return;
+  try{
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && await reg.pushManager.getSubscription();
+    if(!sub) return;
+    const j = sub.toJSON();
+    await sbInsert(T.push, { endpoint:j.endpoint, kisi:ME, p256dh:j.keys.p256dh, auth:j.keys.auth }, true);
+  }catch(err){}
+}
+
 // ---------------- data ----------------
 let refreshing=false;
 async function refresh(){
@@ -755,6 +870,7 @@ async function refresh(){
     perLog = {}; pl.forEach(x=>{ perLog[x.id]=x; });
     presence = {}; (pr||[]).forEach(x=>{ presence[x.id]=x; });
     touchPresence();
+    await loadSeen();
     const cfg = cf && cf[0] ? (cf[0].data || cf[0]) : null;
     if(cfg && cfg.alan){ const c=cfg; const nl={}; for(const k of ["alan","meslek","onem","aciliyet","sorumlu","durum","tedarikci"]) if(Array.isArray(c[k])) nl[k]=c[k];
       LISTS=Object.assign({},LISTS,nl); applyLists(); }
