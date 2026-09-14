@@ -689,11 +689,13 @@ function openDlg(item){ if(!item&&!ME) return showGate();
     const target = IS_ADMIN() ? VIEW : ME;
     if(target && ![...form.sorumlu.options].some(o=>o.value===target)) form.sorumlu.add(new Option(target,target));
     form.sorumlu.value = target || sorumluList()[0]; }
-  // Mete hands work to anyone; everyone else picks themselves or Mete (13 Sep)
-  if(IS_ADMIN()){ form.sorumlu.disabled=false; }
-  else { const cur=(item&&item.sorumlu)?item.sorumlu:ME;
-         const allowed=[ME,"Mete",cur].filter((v,i,a)=>v&&a.indexOf(v)===i);
-         fillSel(form.sorumlu,allowed); form.sorumlu.value=cur; form.sorumlu.disabled=false; }
+  // Anyone can hand work to anyone (14 Sep). Until then a teammate could only
+  // assign to themselves or Mete; Jacob opened it to the whole team, so the
+  // select is the full sorumlu list for everyone.
+  form.sorumlu.disabled=false;
+  { const cur=(item&&item.sorumlu) ? item.sorumlu : ((IS_ADMIN()?VIEW:ME) || ME || sorumluList()[0]);
+    if(cur && ![...form.sorumlu.options].some(o=>o.value===cur)) form.sorumlu.add(new Option(cur,cur));
+    if(cur) form.sorumlu.value=cur; }
   dlg.showModal(); if(!item) setTimeout(()=>form.konu.focus(),50); }
 $("#statusbar").addEventListener("click",e=>{ const b=e.target.closest("[data-s]"); if(!b||!editing) return; editing.durum=b.dataset.s; $$("#statusbar .chip").forEach(x=>x.setAttribute("aria-pressed",x===b)); });
 $("#btnCancel").onclick=()=>dlg.close(); $("#fab").onclick=()=>openDlg(null);
