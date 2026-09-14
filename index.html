@@ -19,18 +19,21 @@
 :root{
   --bg:#F3EFE9; --paper:#FFFFFF; --ink:#2B2A2C; --ink2:#5E5B58; --muted:#8C8681; --line:#D9D2C7; --olive:#6F6A50; --moss:#5F6B4C;
   --crit:#B3705A; --crit-ink:#FFFFFF; --high:#D9B3A3; --mid:#E8DFCF; --low:#BFC7AE; --done:#E4DFD8; --wait:#E8DFCF; --prog:#B7C0C8;
+  --crit-bg:#FAE7E0; --crit-line:#E2B7A6;
   --shadow:0 1px 0 rgba(43,42,44,.05), 0 6px 18px -12px rgba(43,42,44,.25);
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
     --bg:#1E1C1A; --paper:#2A2725; --ink:#F1ECE5; --ink2:#CFC7BD; --muted:#948C83; --line:#403B36; --olive:#B3A985; --moss:#A3AE8B;
     --crit:#C07E66; --crit-ink:#1E1C1A; --high:#7D5F55; --mid:#4E4539; --low:#55604A; --done:#33302D; --wait:#4E4539; --prog:#465058;
+    --crit-bg:#3B2823; --crit-line:#6B463A;
     --shadow:0 1px 0 rgba(0,0,0,.2), 0 6px 18px -12px rgba(0,0,0,.6);
   }
 }
 :root[data-theme="dark"]{
   --bg:#1E1C1A; --paper:#2A2725; --ink:#F1ECE5; --ink2:#CFC7BD; --muted:#948C83; --line:#403B36; --olive:#B3A985; --moss:#A3AE8B;
   --crit:#C07E66; --crit-ink:#1E1C1A; --high:#7D5F55; --mid:#4E4539; --low:#55604A; --done:#33302D; --wait:#4E4539; --prog:#465058;
+  --crit-bg:#3B2823; --crit-line:#6B463A;
   --shadow:0 1px 0 rgba(0,0,0,.2), 0 6px 18px -12px rgba(0,0,0,.6);
 }
 *{box-sizing:border-box}
@@ -61,6 +64,14 @@ nav.tabs button[aria-selected="true"] .n{background:var(--bg);color:var(--ink)} 
 .viewbar .viewwho small{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
 #team{margin-bottom:12px}
 #team .thead{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--olive);padding:0 4px 6px}
+.searchrow{position:relative;margin-bottom:12px}
+.searchrow svg{position:absolute;left:13px;top:50%;margin-top:-8px;width:16px;height:16px;stroke:var(--muted);fill:none;stroke-width:2;stroke-linecap:round;pointer-events:none}
+.searchrow input{width:100%;background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:11px 14px 11px 37px;font-size:16px;color:var(--ink);appearance:none;-webkit-appearance:none}
+.searchrow input::placeholder{color:var(--muted)}
+.searchrow input:focus{outline:2px solid var(--olive);outline-offset:-1px}
+.searchrow input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none;width:16px;height:16px;background:var(--muted);cursor:pointer;
+  -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center/16px no-repeat;
+  mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 4l8 8M12 4l-8 8' stroke='%23000' stroke-width='2' stroke-linecap='round' fill='none'/%3E%3C/svg%3E") center/16px no-repeat}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:7px 13px;font-size:14px;font-weight:500;cursor:pointer;color:var(--ink2)}
 .chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -81,6 +92,9 @@ section.group{margin-top:14px}
 .rows{display:grid;gap:8px}
 .card{display:grid;grid-template-columns:6px 1fr auto;background:var(--paper);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
 .card.hide{display:none}
+/* open Kritik work (Önem Yüksek + Ne zaman Acil) reads red at a glance, for everyone */
+.card.crit{background:var(--crit-bg);border-color:var(--crit-line)}
+.card.crit .ph{background:var(--crit-line);border-color:var(--crit-line)}
 .card.offseason{opacity:.55}
 .card.pdone{opacity:.75}
 .stripe{background:var(--mid)} .stripe.p1{background:var(--crit)} .stripe.p2{background:var(--high)} .stripe.p3{background:var(--mid)} .stripe.p4{background:var(--low)}
@@ -197,6 +211,10 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
 
   <div id="tab-todo">
     <div class="viewbar" id="viewbar" hidden></div>
+    <div class="searchrow">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
+      <input type="search" id="q" placeholder="İş ara…" aria-label="İş ara" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
+    </div>
     <div class="kpis" id="kpis"></div>
     <div id="team" hidden></div>
     <div class="chips" id="chips">
@@ -375,7 +393,7 @@ document.getElementById("gcYes").addEventListener("click", ()=>{
        if(ADMIN_DEV) localStorage.setItem("pano_admin","1"); }catch(err){}
   document.getElementById("gate").hidden = true;
   // a different person means a different view: clear every filter
-  kpiFilter="open"; showDone=false; fAlan=""; fMeslek=""; fSorumlu=""; tab="todo";
+  kpiFilter="open"; showDone=false; fAlan=""; fMeslek=""; fSorumlu=""; q=""; $("#q").value=""; tab="todo";
   $("#showDone").setAttribute("aria-pressed","false");
   lastTouch=0;
   applyLists(); paintWho(); renderAll(); refresh();
@@ -404,7 +422,7 @@ let LISTS={
 };
 const MONTH_NAMES=["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
-let items=[], per=[], perLog={}, presence={}, ready=false, tab="todo", kpiFilter="open", fAlan="", fMeslek="", fSorumlu="", showDone=false, editing=null, pEditing=null, lastUndo=null, editingFotos=[];
+let items=[], per=[], perLog={}, presence={}, ready=false, tab="todo", kpiFilter="open", fAlan="", fMeslek="", fSorumlu="", q="", showDone=false, editing=null, pEditing=null, lastUndo=null, editingFotos=[];
 const _now=new Date(); let pYear=_now.getFullYear(), pMonth=_now.getMonth(), pKategori="";
 
 function prio(i){ if(!i.onem||!i.aciliyet) return {n:4,l:"Düşük"};
@@ -447,6 +465,12 @@ function fillSel(el,arr,blank){ const v=el.value; el.innerHTML=(blank?'<option v
 // meslek dropdowns are always shown A-Z in Turkish collation, whatever order
 // the list arrives in from pano_config (13 Sep)
 function trSort(a){ return a.slice().sort((x,y)=>x.localeCompare(y,"tr")); }
+// search: fold Turkish letters to ASCII so "cati" finds "çatı" and "Isik" finds "ışık"
+function fold(s){ return (s||"").toLocaleLowerCase("tr")
+  .replace(/ı/g,"i").replace(/ş/g,"s").replace(/ğ/g,"g").replace(/ü/g,"u").replace(/ö/g,"o").replace(/ç/g,"c")
+  .replace(/â/g,"a").replace(/î/g,"i").replace(/û/g,"u"); }
+function matchQ(i,terms){ const hay=fold([i.konu,i.aciklama,i.alan,i.meslek,i.sorumlu,i.durum].filter(Boolean).join(" "));
+  return terms.every(t=>hay.indexOf(t)>=0); }
 function sorumluList(){ return (ME && LISTS.sorumlu.indexOf(ME)<0) ? LISTS.sorumlu.concat([ME]) : LISTS.sorumlu; }
 function applyLists(){ const SOR=sorumluList();
   fillSel($("#alan"),LISTS.alan,"–"); fillSel($("#meslek"),trSort(LISTS.meslek)); fillSel($("#onem"),LISTS.onem,"–"); fillSel($("#aciliyet"),LISTS.aciliyet,"–"); fillSel($("#sorumlu"),SOR); fillSel($("#pSorumlu"),SOR);
@@ -545,14 +569,16 @@ function renderTodo(){
   else if(kpiFilter==="hafta") list=open.filter(isHafta);
   else list=open;
   if(fAlan) list=list.filter(i=>i.alan===fAlan); if(fMeslek) list=list.filter(i=>i.meslek===fMeslek); if(fSorumlu) list=list.filter(i=>i.sorumlu===fSorumlu);
+  const terms=fold(q).split(/\s+/).filter(Boolean);
+  if(terms.length) list=list.filter(i=>matchQ(i,terms));
   list.sort((a,b)=>prio(a).n-prio(b).n||(b.created||"").localeCompare(a.created||""));
-  if(!list.length){ $("#list").innerHTML=`<div class="empty">${ready?(showDone?"Henüz biten iş yok.":"Bu listede iş yok. 👍"):"Yükleniyor…"}</div>`; return; }
+  if(!list.length){ $("#list").innerHTML=`<div class="empty">${ready?(terms.length?`“${esc(q)}” için sonuç yok.`:(showDone?"Henüz biten iş yok.":"Bu listede iş yok. 👍")):"Yükleniyor…"}</div>`; return; }
   $("#list").innerHTML=`<div class="rows">${list.map(card).join("")}</div>`;
 }
 function card(i){ const p=prio(i), devam=i.durum==="Devam ediyor";
   // first photo shows as a thumbnail left of the text; the rest are a count badge
   const fot=(i.fotograflar||[]).filter(f=>f&&f.url), thumb=fot.length?`<div class="thumb" data-open="${esc(i.id)}"><span class="ph"><img src="${esc(fot[0].url)}" alt="" loading="lazy" decoding="async">${fot.length>1?`<span class="n">${fot.length}</span>`:""}</span></div>`:"";
-  return `<div class="card${fot.length?" pic":""}" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>${thumb}
+  return `<div class="card${fot.length?" pic":""}${p.n===1&&isOpen(i)?" crit":""}" data-id="${esc(i.id)}"><div class="stripe p${p.n}"></div>${thumb}
     <div class="main" data-open="${esc(i.id)}"><p class="t">${esc(i.konu)}</p>
       <p class="m"><b>${esc(i.alan||"")}</b>${i.meslek?`<span class="dot"></span><span>${esc(i.meslek)}</span>`:""}${i.sorumlu?`<span class="dot"></span><span>${esc(i.sorumlu)}</span>`:""}${i.tarih?`<span class="dot"></span><span>${fmtD(i.tarih)}</span>`:""}</p></div>
     <div class="side">${devam?`<span class="pill prog">Devam</span>`:(p.n<=2?`<span class="pill p${p.n}">${p.l}</span>`:"")}${isOpen(i)?`<button type="button" class="done-btn" data-done="${esc(i.id)}">✓ Bitti</button>`:`<button type="button" class="done-btn" data-reopen="${esc(i.id)}">Geri aç</button>`}</div></div>`; }
@@ -594,12 +620,15 @@ function pcard(p){
 $("nav.tabs").addEventListener("click",e=>{ const b=e.target.closest("[data-tab]"); if(!b) return; tab=b.dataset.tab; $$("[data-tab]").forEach(x=>x.setAttribute("aria-selected",x===b)); $("#tab-todo").hidden=tab!=="todo"; $("#tab-periodic").hidden=tab!=="periodic"; $("#fab").hidden=tab!=="todo"; });
 $("#kpis").addEventListener("click",e=>{ const b=e.target.closest("[data-k]"); if(b){ kpiFilter=b.dataset.k; showDone=false; $("#showDone").setAttribute("aria-pressed","false"); renderTodo(); } });
 $("#team").addEventListener("click",e=>{ const b=e.target.closest("[data-view]"); if(!b) return;
-  VIEW=b.dataset.view; kpiFilter="open"; showDone=false; fAlan=""; fMeslek="";
+  VIEW=b.dataset.view; kpiFilter="open"; showDone=false; fAlan=""; fMeslek=""; q=""; $("#q").value="";
   $("#showDone").setAttribute("aria-pressed","false"); applyLists(); renderAll(); window.scrollTo(0,0); });
 $("#viewbar").addEventListener("click",e=>{ if(!e.target.closest("#backMine")) return;
-  VIEW=ME; kpiFilter="open"; showDone=false; fAlan=""; fMeslek="";
+  VIEW=ME; kpiFilter="open"; showDone=false; fAlan=""; fMeslek=""; q=""; $("#q").value="";
   $("#showDone").setAttribute("aria-pressed","false"); applyLists(); renderAll(); window.scrollTo(0,0); });
 $("#showDone").onclick=()=>{ showDone=!showDone; $("#showDone").setAttribute("aria-pressed",showDone); renderTodo(); };
+$("#q").addEventListener("input",e=>{ q=e.target.value.trim(); renderTodo(); });
+$("#q").addEventListener("search",e=>{ q=e.target.value.trim(); renderTodo(); });
+$("#q").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); e.target.blur(); } });
 $("#fAlan").onchange=e=>{fAlan=e.target.value;renderTodo()}; $("#fMeslek").onchange=e=>{fMeslek=e.target.value;renderTodo()}; $("#fSorumlu").onchange=e=>{fSorumlu=e.target.value;renderTodo()};
 $("#pPrev").onclick=()=>{ pMonth--; if(pMonth<0){pMonth=11;pYear--;} renderPeriodic(); };
 $("#pNext").onclick=()=>{ pMonth++; if(pMonth>11){pMonth=0;pYear++;} renderPeriodic(); };
