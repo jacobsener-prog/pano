@@ -526,20 +526,40 @@ async function addFotoFiles(files){
 }
 $("#fotoInput").addEventListener("change",e=>{ const files=[...e.target.files]; e.target.value=""; addFotoFiles(files); });
 
-// Drag & drop onto the photo area of the card form. Files only; anything
-// dropped elsewhere is swallowed so the browser does not navigate away.
+// Drag & drop for the card form's photos. Nothing is gated on
+// dataTransfer.types — Safari does not report it reliably mid-drag, which is
+// why the first version did nothing on the Mac. Instead: while the card dialog
+// is open, a file dropped ANYWHERE in the window is attached and the photo
+// field lights up to say so. Stray file drops are swallowed so the browser
+// never navigates away from the open form; a text drag into a field still
+// behaves normally.
 (function(){
-  const zone=$("#fotoField"); if(!zone) return;
-  const hasFiles=e=>{ const dt=e.dataTransfer; return !!dt && Array.prototype.indexOf.call(dt.types||[],"Files")>-1; };
-  let depth=0;
-  const off=()=>{ depth=0; zone.classList.remove("dropping"); };
-  zone.addEventListener("dragenter",e=>{ if(!hasFiles(e)) return; e.preventDefault(); depth++; zone.classList.add("dropping"); });
-  zone.addEventListener("dragover",e=>{ if(!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect="copy"; zone.classList.add("dropping"); });
-  zone.addEventListener("dragleave",e=>{ if(!hasFiles(e)) return; depth--; if(depth<=0) off(); });
-  zone.addEventListener("drop",e=>{ if(!hasFiles(e)) return; e.preventDefault(); e.stopPropagation(); off();
-    const files=Array.prototype.slice.call(e.dataTransfer.files||[]); if(files.length) addFotoFiles(files); });
-  window.addEventListener("dragover",e=>{ if(hasFiles(e)) e.preventDefault(); });
-  window.addEventListener("drop",e=>{ if(hasFiles(e)){ e.preventDefault(); off(); } });
+  const zone=$("#fotoField");
+  let hot=0;
+  const warm=()=>{ if(!zone) return; zone.classList.add("dropping"); clearTimeout(hot);
+    hot=setTimeout(()=>zone.classList.remove("dropping"),200); };
+  const cold=()=>{ clearTimeout(hot); if(zone) zone.classList.remove("dropping"); };
+  const dlgOpen=()=>{ const d=document.getElementById("dlg"); return !!d && d.open; };
+  const inText=el=>!!(el && el.closest && el.closest("input,textarea,[contenteditable]"));
+  const filesOf=dt=>{
+    if(!dt) return [];
+    let f=Array.prototype.slice.call(dt.files||[]);
+    if(!f.length && dt.items) f=Array.prototype.slice.call(dt.items)
+      .filter(i=>i.kind==="file").map(i=>i.getAsFile()).filter(Boolean);
+    return f;
+  };
+  document.addEventListener("dragover",e=>{
+    e.preventDefault();
+    if(e.dataTransfer){ try{ e.dataTransfer.dropEffect="copy"; }catch(_){} }
+    if(dlgOpen()) warm();
+  },true);
+  document.addEventListener("dragend",cold,true);
+  document.addEventListener("drop",e=>{
+    const files=filesOf(e.dataTransfer);
+    if(!files.length && inText(e.target)){ cold(); return; }   // ordinary text drop
+    e.preventDefault(); cold();
+    if(files.length && dlgOpen()) addFotoFiles(files);
+  },true);
 })();
 
 // ---- periodic helpers ----
