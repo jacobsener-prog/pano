@@ -3,10 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="color-scheme" content="light dark">
+<meta name="color-scheme" content="dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&display=swap">
 <title>Takım Panosu</title>
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#6F6A50">
+<meta name="theme-color" content="#16113a">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Pano">
@@ -17,30 +19,33 @@
 <link rel="icon" type="image/png" sizes="512x512" href="icon-512.png">
 <style>
 :root{
-  --bg:#F3EFE9; --paper:#FFFFFF; --ink:#2B2A2C; --ink2:#5E5B58; --muted:#8C8681; --line:#D9D2C7; --olive:#6F6A50; --moss:#5F6B4C;
-  --crit:#B3705A; --crit-ink:#FFFFFF; --high:#D9B3A3; --mid:#E8DFCF; --low:#BFC7AE; --done:#E4DFD8; --wait:#E8DFCF; --prog:#B7C0C8;
-  --crit-bg:#FAE7E0; --crit-line:#E2B7A6;
-  --new-bg:#E7F1F8; --new-line:#BBD6E8; --new:#3E7FA6; --new-ink:#FFFFFF;
-  --shadow:0 1px 0 rgba(43,42,44,.05), 0 6px 18px -12px rgba(43,42,44,.25);
+  --bg:#16113a; --paper:#272953; --ink:#e0e1e7; --ink2:#c0c9de; --muted:#9ea3c4; --line:#43456a; --olive:#8fb0ff; --moss:#0ed354;
+  --crit:#fc5c6a; --crit-ink:#FFFFFF; --high:#eecc55; --mid:#3a3c6b; --low:#2d7a55; --done:#30325e; --wait:#3a3c6b; --prog:#46476e;
+  --crit-bg:#4a2a4e; --crit-line:#8c3f5a;
+  --new-bg:#27406b; --new-line:#3f64a3; --new:#4e8cf5; --new-ink:#FFFFFF;
+  --card2:#30325e; --field:#1d1946; --accent:#4e8cf5; --dim:#7a7ea6;
+  --shadow:none;
 }
 @media (prefers-color-scheme: dark){
   :root:not([data-theme="light"]){
-    --bg:#1E1C1A; --paper:#2A2725; --ink:#F1ECE5; --ink2:#CFC7BD; --muted:#948C83; --line:#403B36; --olive:#B3A985; --moss:#A3AE8B;
-    --crit:#C07E66; --crit-ink:#1E1C1A; --high:#7D5F55; --mid:#4E4539; --low:#55604A; --done:#33302D; --wait:#4E4539; --prog:#465058;
-    --crit-bg:#3B2823; --crit-line:#6B463A;
-    --new-bg:#1F2C35; --new-line:#3A5A70; --new:#7FB4D6; --new-ink:#14212A;
-    --shadow:0 1px 0 rgba(0,0,0,.2), 0 6px 18px -12px rgba(0,0,0,.6);
+  --bg:#16113a; --paper:#272953; --ink:#e0e1e7; --ink2:#c0c9de; --muted:#9ea3c4; --line:#43456a; --olive:#8fb0ff; --moss:#0ed354;
+  --crit:#fc5c6a; --crit-ink:#FFFFFF; --high:#eecc55; --mid:#3a3c6b; --low:#2d7a55; --done:#30325e; --wait:#3a3c6b; --prog:#46476e;
+  --crit-bg:#4a2a4e; --crit-line:#8c3f5a;
+  --new-bg:#27406b; --new-line:#3f64a3; --new:#4e8cf5; --new-ink:#FFFFFF;
+  --card2:#30325e; --field:#1d1946; --accent:#4e8cf5; --dim:#7a7ea6;
+  --shadow:none;
   }
 }
 :root[data-theme="dark"]{
-  --bg:#1E1C1A; --paper:#2A2725; --ink:#F1ECE5; --ink2:#CFC7BD; --muted:#948C83; --line:#403B36; --olive:#B3A985; --moss:#A3AE8B;
-  --crit:#C07E66; --crit-ink:#1E1C1A; --high:#7D5F55; --mid:#4E4539; --low:#55604A; --done:#33302D; --wait:#4E4539; --prog:#465058;
-  --crit-bg:#3B2823; --crit-line:#6B463A;
-  --new-bg:#1F2C35; --new-line:#3A5A70; --new:#7FB4D6; --new-ink:#14212A;
-  --shadow:0 1px 0 rgba(0,0,0,.2), 0 6px 18px -12px rgba(0,0,0,.6);
+  --bg:#16113a; --paper:#272953; --ink:#e0e1e7; --ink2:#c0c9de; --muted:#9ea3c4; --line:#43456a; --olive:#8fb0ff; --moss:#0ed354;
+  --crit:#fc5c6a; --crit-ink:#FFFFFF; --high:#eecc55; --mid:#3a3c6b; --low:#2d7a55; --done:#30325e; --wait:#3a3c6b; --prog:#46476e;
+  --crit-bg:#4a2a4e; --crit-line:#8c3f5a;
+  --new-bg:#27406b; --new-line:#3f64a3; --new:#4e8cf5; --new-ink:#FFFFFF;
+  --card2:#30325e; --field:#1d1946; --accent:#4e8cf5; --dim:#7a7ea6;
+  --shadow:none;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Public Sans","Segoe UI",Roboto,Arial,sans-serif;font-weight:400;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Figtree","Segoe UI",Roboto,Arial,sans-serif;font-weight:400;font-size:16px;line-height:1.45;-webkit-font-smoothing:antialiased}
 button,input,select,textarea{font:inherit;color:inherit}
 .wrap{max-width:900px;margin:0 auto;padding:14px 14px 110px}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:4px 2px 10px}
@@ -187,6 +192,85 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
 .who:disabled{opacity:1;cursor:default;color:var(--muted)}
 @media (max-width:520px){ .grid3{grid-template-columns:1fr 1fr} .card .t{font-size:16px} .kpis{grid-template-columns:repeat(2,1fr)} }
 @media (prefers-reduced-motion: reduce){ .toast{transition:none} }
+
+/* ===== DASH theme (30 Sep 2026): colours and type from Jacob's DASH dashboard. Styling only. ===== */
+:root{color-scheme:dark}
+body{font-variant-numeric:tabular-nums}
+header h1{font-size:26px;font-weight:800;letter-spacing:.01em;color:var(--ink)}
+header .sub{color:var(--ink2)}
+nav.tabs{background:var(--paper);border-color:transparent;border-radius:10px}
+nav.tabs button{color:var(--muted);font-weight:500}
+nav.tabs button[aria-selected="true"]{background:var(--card2);color:var(--ink);font-weight:700}
+nav.tabs button[aria-selected="true"] .n{background:var(--mid);color:var(--ink)}
+nav.tabs .n{background:var(--mid);color:var(--ink)}
+.kpi{border-color:transparent;border-radius:10px;padding:10px 14px}
+.kpi .l{color:var(--ink);text-transform:none;letter-spacing:0;font-size:13px;font-weight:700}
+.kpi .v{color:var(--ink);font-weight:500;letter-spacing:-.02em}
+.kpi .s{color:var(--ink2);font-weight:500}
+.kpi.crit{background:var(--crit-bg)}
+.kpi.crit .v{color:var(--ink)}
+.kpi[aria-pressed="true"]{background:var(--card2);color:var(--ink);border-color:var(--ink2);box-shadow:inset 0 0 0 1px var(--ink2)}
+.kpi[aria-pressed="true"] .l,.kpi[aria-pressed="true"] .v{color:var(--ink)}
+.kpi[aria-pressed="true"] .s,.kpi[aria-pressed="true"] .s.cold{color:var(--ink2);opacity:1}
+.kpi.crit[aria-pressed="true"]{background:var(--crit-bg)}
+.searchrow input{background:var(--field);border-color:var(--line)}
+.searchrow input:focus{outline:2px solid var(--accent)}
+.chip{background:var(--paper);border-color:var(--line);color:var(--ink2)}
+.chip[aria-pressed="true"]{background:var(--card2);color:var(--ink);border-color:var(--ink2)}
+select.chip{background-color:var(--paper)}
+.ghead h2,#team .thead{color:var(--ink);text-transform:none;letter-spacing:0;font-size:18px}
+.card{border-color:transparent;border-radius:10px}
+.card .t{color:var(--ink)}
+.card.new{background:var(--new-bg);border-color:var(--new-line)}
+.card.crit{background:var(--crit-bg);border-color:var(--crit-line)}
+.pill{border-radius:999px}
+.pill.p2{color:#16113a}
+.pill.p3,.pill.wait,.pill.prog,.pill.p4{color:var(--ink)}
+.done-btn{border:1px solid rgba(255,255,255,.35);color:var(--ink);border-radius:6px;font-weight:600}
+.done-btn:hover,.done-btn:focus-visible{background:transparent;border-color:var(--moss);color:var(--moss)}
+.done-btn.ok{background:var(--moss);border-color:var(--moss);color:#06251a}
+.pprogress .bar{background:var(--mid)}
+.curbadge{color:#06251a}
+.fab{background:var(--accent);color:#fff;box-shadow:0 10px 30px -10px rgba(0,0,0,.7)}
+dialog{background:var(--paper);border:1px solid var(--line)}
+dialog::backdrop{background:rgba(10,11,15,.78)}
+.f label{color:var(--muted);text-transform:none;letter-spacing:0;font-size:13px;font-weight:500}
+.f input,.f select,.f textarea{background:var(--field);border-color:var(--line);color:var(--ink)}
+.f input:focus,.f select:focus,.f textarea:focus{outline:2px solid var(--accent);outline-offset:-1px}
+.btn{background:transparent;border-color:rgba(255,255,255,.35);color:var(--ink)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.danger{color:var(--crit);border-color:rgba(252,92,106,.6)}
+.photogrid .photobtn{background:var(--field)}
+.addtile{border-color:var(--line);color:var(--muted)}
+.toast{background:var(--card2);color:var(--ink);border:1px solid var(--line)}
+.toast button{background:var(--accent);color:#fff}
+#gate{background:var(--bg)}
+#gate .names button,#gate .confirm .row button{background:var(--paper);border-color:transparent;color:var(--ink)}
+#gate .names button:active{background:var(--card2);color:var(--ink)}
+#gate .confirm .row button.yes{background:var(--accent);border-color:var(--accent);color:#fff}
+.pushbar{color:var(--ink)}
+
+/* ===== Konuk kartları (30 Sep 2026): the same guest cards as DASH, in Turkish, on Ömer / Ayşe / Yasemin's boards ===== */
+#konuk{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+@media (max-width:440px){ #konuk{grid-template-columns:1fr} }
+.gk{position:relative;background:var(--paper);border:1px solid transparent;border-radius:10px;padding:10px 14px 12px;text-align:left;min-width:0;cursor:pointer;color:var(--ink);display:block;width:100%}
+.gk .gp{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:3px}
+.gk .gst{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;letter-spacing:.1em;color:var(--dim);margin-bottom:4px}
+.gk .gst i{width:9px;height:9px;border-radius:50%;background:var(--dim);flex:none}
+.gk .grow{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
+.gk .gn{font-size:21px;font-weight:600;line-height:1.15;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gk .gch{flex:none;font-size:12px;font-weight:500;background:rgba(255,255,255,.08);padding:3px 11px;border-radius:999px}
+.gk .gm{color:var(--ink2);font-size:13px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gk .grow+.gm{margin-top:3px}
+.gk .gthen{color:var(--muted);font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gk .gthen b{color:var(--ink2);font-weight:600}
+.gk.g-stay{background:#243f4e}.gk.g-stay .gst{color:#8be8bf}.gk.g-stay .gst i{background:#8be8bf}.gk.g-stay .gch{background:rgba(139,232,191,.12)}
+.gk.g-soon{background:#2e2c66}.gk.g-soon .gst{color:#b9a8ff}.gk.g-soon .gst i{background:#b9a8ff}.gk.g-soon .gch{background:rgba(185,168,255,.16)}
+.gk.g-later .gst{color:#8fb0ff}.gk.g-later .gst i{background:#8fb0ff}
+/* a guest this person has not seen yet: amber, with a YENİ MİSAFİR pill, until they tap the card */
+.gk.gnew{background:#4a4130;border-color:#eecc55}
+.gk.gnew .gst{color:#eecc55}.gk.gnew .gst i{background:#eecc55}
+.gk .gyeni{display:inline-block;background:#eecc55;color:#16113a;font-size:10.5px;font-weight:800;letter-spacing:.04em;border-radius:999px;padding:2px 8px;margin-left:auto}
 </style>
 </head>
 <body>
@@ -224,6 +308,7 @@ dialog::backdrop{background:rgba(26,24,22,.5)}
   <div id="tab-todo">
     <div class="viewbar" id="viewbar" hidden></div>
     <div class="pushbar" id="pushbar" hidden></div>
+    <div id="konuk" hidden></div>
     <div class="searchrow">
       <svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14"></path></svg>
       <input type="search" id="q" placeholder="İş ara…" aria-label="İş ara" autocomplete="off" autocorrect="off" spellcheck="false" enterkeyhint="search">
@@ -593,6 +678,7 @@ function renderAll(){ paintWho(); applyScope(); renderTodo(); renderPeriodic(); 
   $("#meta").textContent=new Date().toLocaleDateString("tr-TR",{weekday:"long",day:"numeric",month:"long"}); }
 
 function renderTodo(){
+  renderKonuk();
   const admin=IS_ADMIN(), other=viewingOther(), base=scopedItems(), open=base.filter(isOpen);
   const isHafta=i=>i.aciliyet==="Bu Hafta";
 
@@ -633,6 +719,7 @@ function renderTodo(){
   if(!list.length){ $("#list").innerHTML=`<div class="empty">${ready?(terms.length?`“${esc(q)}” için sonuç yok.`:(showDone?"Henüz biten iş yok.":"Bu listede iş yok. 👍")):"Yükleniyor…"}</div>`; return; }
   $("#list").innerHTML=`<div class="rows">${list.map(card).join("")}</div>`;
 }
+
 function card(i){ const p=prio(i), devam=i.durum==="Devam ediyor";
   // first photo shows as a thumbnail left of the text; the rest are a count badge
   const fot=(i.fotograflar||[]).filter(f=>f&&f.url), thumb=fot.length?`<div class="thumb" data-open="${esc(i.id)}"><span class="ph"><img src="${esc(fot[0].url)}" alt="" loading="lazy" decoding="async">${fot.length>1?`<span class="n">${fot.length}</span>`:""}</span></div>`:"";
@@ -901,6 +988,64 @@ async function resubscribe(){
   }catch(err){}
 }
 
+
+// ---------------- konuklar: the same guest cards as DASH ----------------
+// Rows come from the pano_konuklar() RPC, which runs DASH's own stays query.
+// The logic below mirrors DASH's renderGuestStatus(); labels are Turkish.
+const KONUK_KISI=["Ömer","Ayşe","Yasemin"];
+let konuklar=null;   // null until the first load, so no false "REZERVASYON YOK"
+async function loadKonuklar(){
+  const r=await fetch(REST+"/rpc/pano_konuklar",{method:"POST",cache:"no-store",headers:H(),body:"{}"});
+  if(!r.ok) throw new Error("konuk "+r.status);
+  konuklar=await r.json();
+}
+const gTrMon=["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"];
+const gIstToday=()=>new Date().toLocaleDateString("en-CA",{timeZone:"Europe/Istanbul"});
+const gIso=d=>{const [y,m,dd]=String(d).split("-").map(Number);return new Date(y,m-1,dd);};
+const gName=x=>String(x.name||"Misafir").replace(/\s*\((event|via)[^)]*\)\s*$/i,"");
+const gKey=x=>"konuk:"+x.property+"|"+x.checkin+"|"+x.name;
+const gCHN={airbnb:"Airbnb",agent:"Acente",booking:"Booking.com","booking.com":"Booking.com",website:"Direkt",direct:"Direkt",whatsapp:"Direkt",instagram:"Direkt",email:"Direkt"};
+const gCh=x=>x.src==="a"?"Airbnb":(x.channel?gCHN[String(x.channel).toLowerCase()]||String(x.channel):"");
+function gRange(a,b){const A=gIso(a),B=gIso(b),yr=B.getFullYear()!==new Date().getFullYear()?" "+B.getFullYear():"";
+  return (A.getMonth()===B.getMonth()?`${A.getDate()}–${B.getDate()} ${gTrMon[A.getMonth()]}`:`${A.getDate()} ${gTrMon[A.getMonth()]} – ${B.getDate()} ${gTrMon[B.getMonth()]}`)+yr;}
+function gStays(key){
+  const out=[],sn=new Set();
+  konuklar.filter(x=>x.property===key).forEach(x=>{const k=x.checkin+"|"+x.checkout;if(!x.checkin||!x.checkout||sn.has(k))return;sn.add(k);out.push(x);});
+  return out.sort((a,b)=>a.checkin<b.checkin?-1:1);
+}
+function renderKonuk(){
+  const box=$("#konuk"); if(!box) return;
+  if(!KONUK_KISI.includes(VIEW) || !konuklar){ box.hidden=true; box.innerHTML=""; return; }
+  const t=gIstToday(), MS=864e5, mine=VIEW===ME;
+  box.innerHTML=[["jungle_eva","Jungle Eva"],["eva_bosphora","Eva Bosphora"]].map(([key,label])=>{
+    const list=gStays(key);
+    const staying=list.find(x=>x.checkin<=t&&t<x.checkout)||list.find(x=>x.checkout===t);
+    const next=list.find(x=>x.checkin>=t&&x!==staying);
+    const x=staying||next; let h="",mode="none",id="",yeni=false;
+    if(x){
+      id=gKey(x); yeni=mine && !seen[id];
+      const nIn=Math.round((gIso(x.checkin)-gIso(t))/MS), nOut=Math.round((gIso(x.checkout)-gIso(t))/MS), ev=x.type==="event";
+      let st,sub;
+      if(staying){mode="stay";st=nOut===0?"BUGÜN ÇIKIŞ":"ŞU AN KONAKLIYOR";sub=nOut===0?"Bugün çıkış yapıyor":nOut===1?"Yarın çıkış":`${nOut} gün sonra çıkış`;}
+      else{mode=nIn<=1?"soon":"later";st=nIn===0?"BUGÜN GELİYOR":nIn===1?"YARIN GELİYOR":"SIRADAKİ GELİŞ";
+        sub=[nIn>1?`${nIn} gün sonra geliyor`:"",ev?"Etkinlik":""].filter(Boolean).join(" · ")||(nIn===0?"Bugün giriş":"Yarın giriş");}
+      const ch=gCh(x);
+      h=`<div class="gst"><i></i>${st}${yeni?`<span class="gyeni">YENİ MİSAFİR</span>`:""}</div>
+        <div class="grow"><span class="gn">${esc(gName(x))}</span>${ch?`<span class="gch">${esc(ch)}</span>`:""}</div>
+        <div class="gm">${gRange(x.checkin,x.checkout)}${x.guests?` · ${x.guests} misafir`:""}</div>
+        <div class="gm">${esc(sub)}</div>`;
+      if(staying&&next){const n=Math.round((gIso(next.checkin)-gIso(t))/MS);h+=`<div class="gthen">Sonra <b>${esc(gName(next))}</b> · ${n===0?"bugün":n===1?"yarın":n+" gün sonra"}</div>`;}
+    } else h=`<div class="gst"><i></i>REZERVASYON YOK</div>`;
+    return `<button type="button" class="gk g-${mode}${yeni?" gnew":""}" data-konuk="${esc(id)}"><div class="gp">${label}</div>${h}</button>`;
+  }).join("");
+  box.hidden=false;
+}
+document.addEventListener("click",e=>{
+  const b=e.target.closest&&e.target.closest("#konuk .gk"); if(!b) return;
+  const id=b.dataset.konuk; if(!id || VIEW!==ME || seen[id]) return;
+  markSeen(id).then(renderKonuk); renderKonuk();
+});
+
 // ---------------- data ----------------
 let refreshing=false;
 async function refresh(){
@@ -913,6 +1058,7 @@ async function refresh(){
     presence = {}; (pr||[]).forEach(x=>{ presence[x.id]=x; });
     touchPresence();
     await loadSeen();
+    await loadKonuklar().catch(()=>{ konuklar=null; });
     const cfg = cf && cf[0] ? (cf[0].data || cf[0]) : null;
     if(cfg && cfg.alan){ const c=cfg; const nl={}; for(const k of ["alan","meslek","onem","aciliyet","sorumlu","durum","tedarikci"]) if(Array.isArray(c[k])) nl[k]=c[k];
       LISTS=Object.assign({},LISTS,nl); applyLists(); }
